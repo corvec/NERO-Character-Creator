@@ -24,7 +24,7 @@ class Character_Skill
 		@skill = nero_skill
 		@options = options
 		amount = amount.to_i
-		$log.debug "Character_Skill.new(#{nero_skill.inspect},#{options.inspect},#{amount.inspect})"
+		#puts "New Character Skill: #{amount}x #{nero_skill.name} (#{options})"
 		if amount.is_a? Integer
 			@count = nero_skill.apply_limit(amount)
 		else
@@ -32,36 +32,21 @@ class Character_Skill
 		end
 		#Debug message:
 		if @count != amount.to_i
-			$log.warn "Character_Skill.new(): Limited amount to #{@count}"
+			puts "Character_Skill.new(): Limited amount to #{@count}"
 		end
 		@character = character
-		@temp = true
 	end
 
-	# Set the number of this skill to the passed amount.
 	def count= amount
 		if amount.to_i > 0
 			@count = @skill.apply_limit(amount)
 		end
 	end
 
-	# Returns the name of this skill
 	def name
-		@skill.to_s
+		return @skill.name
 	end
 
-	def to_s
-		@skill.to_s
-	end
-
-	def actualize
-		@temp = false
-	end
-
-
-	# Returns true if the character can legally have this skill,
-	# given racial prohibitions but not account for prerequisites
-	# or build.
 	def legal? class_name = nil, race = nil
 		if @character != nil
 			class_name = @character.character_class.to_s if class_name == nil
@@ -75,30 +60,15 @@ class Character_Skill
 		return true
 	end
 
-	def cost class_name=nil, race=nil, primary_school=nil, build=nil
-		if $character.race.skills.keys.include? @skill.to_s
-			return $character.race.skills[@skill.to_s] * @count
-		end
-
-		cost = base_cost(class_name,race,primary_school,build)
-		if cost == false
-			return false
-		end
-
-
-		return cost
-	end
-
 	# Returns the cost of this skill
 	# Accounts for the primary school of the character with spells
 	# Accounts for templar profs
 	# Accounts for critical attacks if passed a reference to the character's build
-	def base_cost class_name = nil, race = nil, primary_school=nil, build=nil
+	def cost class_name = nil, race = nil, primary_school='Earth', build=nil
 		if @character != nil
 			class_name     = @character.character_class.to_s if class_name     == nil
 			race           = @character.race.to_s            if race           == nil
 			primary_school = @character.primary              if primary_school == nil
-			secondary_school=@character.secondary            if secondary_school==nil
 			build          = @character.build                if build          == nil
 		end
 
@@ -106,102 +76,39 @@ class Character_Skill
 			return false
 		end
 
+		# Secondary spells:
+		#if @skill.name.match('\w* \d') and !@skill.name.match("#{primary_school} \\d")
+			#return 2 * @count * @skill.cost(class_name, race)
+		#end
+
 		cost = @skill.cost(class_name, race)
-
-		# Prohibited or racial
-		if cost == nil or @character.race.prohibited? @skill
-			return false
-		end
-
-		modifiers = $character.race.skill_cost_modifiers(@skill.to_s)
-
 		if cost.is_a? Integer
-			cost *= 2 if modifiers.include? :doubled
-			cost = (cost/2) + (cost%2) if modifiers.include? :halved
-			cost = cost - 1 if modifiers.include? :reduced
-
 			return @count * cost
 		end
-		# Formal
-		unless @skill.to_s.match('Formal').nil?
-			$log.info "Character_Skill.cost() Calculating cost of Formal Magic"
-			if @skill.to_s.match(primary_school)
-				cost = cost['Primary']
-
-				cost *= 2 if modifiers.include? :doubled
-				cost = (cost/2) + (cost%2) if modifiers.include? :halved
-				cost = cost - 1 if modifiers.include? :reduced
-
-				return @count * cost
-			elsif @skill.to_s.match(secondary_school)
-				cost = cost['Secondary']
-
-				cost *= 2 if modifiers.include? :doubled
-				cost = (cost/2) + (cost%2) if modifiers.include? :halved
-				cost = cost - 1 if modifiers.include? :reduced
-
-				return @count * cost
-			else
-				$log.error "School of formal magic did not match primary OR secondary"
-				return false
-			end
+		# Prohibited or racial
+		if cost == nil
+			return false
 		end
-
 		# Must be a templar purchasing profs or crit attacks
 		# (or a rogue getting master profs / master crit attacks)
 		# TODO: check build to see if there are profs if this is a crit att
-		unless @skill.to_s.match('Attack').nil?
+		if @skill.name.match('Attack')
 			set = 0
 			if build != nil
-				unless @skill.to_s.match('Master').nil?
-					set = build.count('Master Proficiency', {}) + build.count('Proficiency',{})
+				if @skill.name.match('Master')
+					set = build.count('Master Proficiency', @options)
 					set = 2 if set > 2
-					# You cannot buy Master Critical Attacks if you already have normal Proficiencies
-					# I'm allowing it unless it's the same hand
-					if build.count('Proficiency', {'Hand'=>@options['Hand']}) != 0
-						return false
-					end
 				else
-					set = build.count('Proficiency', {}) + build.count('Master Proficiency', {})
+					set = build.count('Proficiency', @options)
 					set = 2 if set > 2
 				end
 			end
 			return @count * cost[set]
 		end
-		# Must be a prof.
-		# Profs are accounted for in the following order:
-		# Right, Master; Left, Master; Right, Normal; Left, Normal
-		# Technically there's a bug here: a templar purchasing different normal profs in the same hand will pay weird prices
-		# He's saving 2 build over buying a single Master Prof...
-		additional_count = 0
-		unless @skill.to_s.match('Master') and @options['Hand'] == 'Right'
-			additional_count += build.count('Master Proficiency',{'Hand'=>'Right'})
-			unless @skill.to_s.match('Master') and @options['Hand'] == 'Left'
-				additional_count += build.count('Master Proficiency',{'Hand'=>'Left'})
-				unless (not @skill.to_s.match('Master')) and @options['Hand'] == 'Right'
-					additional_count += build.count('Proficiency',{'Hand'=>'Right'})
-					unless (not @skill.to_s.match('Master')) and @options['Hand'] == 'Left'
-						additional_count += build.count('Proficiency',{'Hand'=>' Left'})
-					end
-				end
-			end
-		end
-
-		# Prevent addition of a normal Prof if you have a Master Crit Attack in that hand
-		unless skill.to_s.match('Master')
-			if build.count('Master Critical Attack', {'Hand'=>@options['Hand']}) > 0
-				return false
-			end
-		end
-
-		# Use additional count to determine the first cost to apply
-		# Use count to determine the final cost to apply
-		if additional_count >= 2
-			return cost[2]*@count
-		end
-		if additional_count == 1
-			return cost[1] + cost[2]*(@count-1)
-		end
+		# must be a prof:
+		# Note that this implementation assumes that you can have a 
+		# minimum priced first master prof and a minimum priced first prof
+		# This may not be legitimate.
 		if @count >= 3
 			return cost[0] + cost[1] + (cost[2]*(@count-2))
 		end
@@ -209,26 +116,13 @@ class Character_Skill
 			return cost[0] + cost[1]
 		end
 		return cost[0]
-
-		# The following occurs when calculating the cost of a solitary temporary prof
-		if build != nil and @temp
-			if @skill.to_s.match('Master')
-				set = build.count('Master Proficiency', {})
-				set = 2 if set > 2
-			else
-				set = build.count('Proficiency', {})
-				set = 2 if set > 2
-			end
-			return cost[set]
-		end
-		return cost[0]
 	end
 
 	# Returns true if the passed skill includes this one (recursive)
 	def is_included_in?(skill)
 		skill.includes.each do |inc|
-			if inc.to_s == @skill.to_s
-				skill_inc = NERO_Skill.lookup(inc)
+			if inc.to_s == @skill.name.to_s
+				skill_inc = $nero_skills.lookup(inc)
 				if !skill_inc.is_a? NERO_Skill
 					next
 				end
@@ -238,7 +132,7 @@ class Character_Skill
 					next
 				end
 			end
-			recurse = NERO_Skill.lookup(inc)
+			recurse = $nero_skills.lookup(inc)
 			if recurse.is_a?(NERO_Skill) and self.is_included_in?(recurse)
 				return true
 			end
@@ -257,21 +151,19 @@ class Character_Skill
 		end
 
 		prereq = prereq.to_s
-		$log.debug "Character_Skill(#{@skill.to_s}).fulfills_prereq(#{prereq})"
+		#puts "Character_Skill(#{@skill.name}).fulfills_prereq(#{prereq})"
 
-		if @skill.to_s == prereq
+		if @skill.name == prereq
 			return check_prereq_count(count)
 		end
 
-		# Check to see if its types, or any of its includes match it
-		include_list = @skill.types + (@skill.includes.is_a?(Hash) ? @skill.includes.keys : @skill.includes)
-
-		include_list.each do |inc|
+		# Check to see if it or any of the includes match it
+		@skill.includes.each do |inc|
 			if inc.to_s == prereq
 				temp = check_prereq_count(count)
 				return temp
 			end
-			recurse = NERO_Skill.lookup(inc)
+			recurse = $nero_skills.lookup(inc)
 			if recurse == nil
 				next
 			end
@@ -285,10 +177,10 @@ class Character_Skill
 
 	def check_prereq_count count
 		if @count >= count
-			$log.debug "Character_Skill(#{@skill.to_s}).check_prereq_count() : returning true"
+			#puts "Character_Skill(#{@skill.name}).check_prereq_count() : returning true"
 			return true
 		end
-		$log.info "Character_Skill(#{@skill.to_s}).check_prereq_count() : returning #{count - @count}"
+		puts "Character_Skill(#{@skill.name}).check_prereq_count() : returning #{count - @count}"
 		return count - @count
 	end
 
@@ -297,7 +189,7 @@ class Character_Skill
 	# This also checks to ensure that skills such as Slays
 	# are at a legal total amount, given the amount of proficiencies
 	def meets_prerequisites? build = nil, my_count = @count
-		$log.debug "Character_Skill(#{@skill.to_s}).meets_prerequisites?(): prereqs = #{@skill.prereqs}"
+		#puts "Character_Skill(#{@skill.name}).meets_prerequisites?(): prereqs = #{@skill.prereqs}"
 		if @skill.prereqs == nil
 			return true
 		end
@@ -310,109 +202,53 @@ class Character_Skill
 		end
 		if @skill.prereqs.is_a? Array
 			@skill.prereqs.each do |prereq|
-				$log.debug "Character_Skill(#{@skill.to_s}).meets_prerequisites?(): prereq = #{prereq}"
+				#puts "Character_Skill(#{@skill.name}).meets_prerequisites?(): prereq = #{prereq}"
 				if !self.meets_prereq?(build, prereq)
-					$log.info "Character_Skill(#{@skill.to_s}).meets_prerequisites?() Prereq #{prereq} not met..."
+					puts "Character_Skill(#{@skill.name}).meets_prerequisites?() Prereq #{prereq} not met..."
 					return false
 				end
 			end
 			return true
 		end
 		if @skill.prereqs.is_a? Hash
-			if @skill.to_s != "Critical Slay/Parry" and  @skill.to_s != "Master Critical Slay/Parry" and @skill.to_s != "Assassinate/Dodge" and @skill.to_s != "Stop Thrust" and @skill.to_s != "Waylay"
+			if @skill.name != "Critical Slay/Parry" and  @skill.name != "Master Critical Slay/Parry" and @skill.name != "Assassinate/Dodge"
 				return true
 			end
 			prof_count = build.count("Proficiency", @options )
 			slay_count = build.count("Critical Slay/Parry", @options )
 			mprof_count= build.count_mprofs( @options )
 			mslay_count= build.count_mslays( @options )
-
-			count  = prof_count - slay_count * 2
+			bstab_count= build.count("Backstab", @options )
+			dodge_count= build.count("Assassinate/Dodge", @options)
+			
+			count =  prof_count - slay_count * 2
 			mcount = mprof_count - mslay_count * 2
+			bcount = bstab_count - dodge_count * 2
 
-			if @skill.to_s == "Critical Slay/Parry"
+			if @skill.name == "Critical Slay/Parry"
 				return count + mcount >= my_count * 2
 			end
-			if @skill.to_s == "Master Critical Slay/Parry"
+			if @skill.name == "Master Critical Slay/Parry"
 				if count <= 0
 					return count + mcount >= my_count * 2
 				else
 					return mcount >= my_count * 2
 				end
 			end
-			if @skill.to_s == "Assassinate/Dodge"
-				bstab_count= build.count("Backstab", @options )
-				dodge_count= build.count("Assassinate/Dodge", @options)
-				bcount = bstab_count - dodge_count * 2
+			if @skill.name == "Assassinate/Dodge"
 				return bcount >= my_count * 2
 			end
-
-			if @skill.to_s == "Stop Thrust"
-				pr2h_count = build.count_2hprofs(@options)
-				stop_count = build.count("Stop Thrust", @options)
-				scount = pr2h_count - (stop_count-1) * 2
-				return scount >= my_count * 2
-			end
-
-			if skill.to_s == "Waylay"
-				way_count = build.count('Waylay')
-				char_lvl  = @character.experience.level
-				return false unless self.meets_prereq?(build, "One Handed Weapon")
-				return false if way_count * 5 > char_lvl
-			end
-
-=begin
-			@skill.prereqs.each do |prereq, count|
-				skill_count = build.count(@skill.name, @options)
-				char_level = @character.experience.level
-
-				if count.is_a? Array
-					minimum = count[0]
-					count = count[1]
-				else
-					minimum = count
-				end
-				count = count.to_i
-
-				case prereq
-				when "Level"
-					if char_level < count * (skill_count + my_count - 1) + minimum
-						return false
-					end
-				when "Two Handed Proficiency"
-					if build.count_2hprofs < count * (skill_count + my_count - 1) + minimum
-						$log.debug "#{build.count_2hprofs} < #{count} * (#{skill_count} + #{my_count} - 1) + #{minimum}"
-						return false
-					end
-				else
-					pr_sk = NERO_Skill.lookup(prereq)
-					if pr_sk.is_a? NERO_Skill
-						if count == 0
-							if build.count(prereq, @options) == 0
-								return false
-							end
-						else
-							pr_count = build.count(prereq, @options)
-							if pr_count < count * (skill_count + my_count - 1) + minimum
-								return false
-							end
-						end
-					end
-				end
-			end
-=end
 		end
-		return true
 	end
 
 	def meets_prereq? build, prereq
-		$log.debug "Character_Skill(#{@skill.to_s}).meets_prereq?(#{prereq})"
+		#puts "Character_Skill(#{@skill.name}).meets_prereq?(#{prereq})"
 		found = false
 		if prereq.match /\w* \d/
 			return build.spell(prereq) > 0
 		end
 		build.skills.each do |check|
-			$log.debug "Character_Skill(#{@skill.to_s}).meets_prereq?(#{prereq}): Checking #{check.skill.to_s}"
+			#puts "Character_Skill(#{@skill.name}).meets_prereq?(#{prereq}): Checking #{check.skill.name}"
 			if check.is_a?(Character_Skill) and check.fulfills_prereq?(prereq)
 				found = true
 				break
@@ -423,15 +259,6 @@ class Character_Skill
 		end
 		return true
 	end
-
-end
-
-
-if __FILE__ == $0
-	$log = Logger.new('build.log',20,102400)
-
-	$log.info "Testing character_skill.rb"
-	$log.warn "Nothing to test!"
 
 end
 

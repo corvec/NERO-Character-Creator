@@ -38,12 +38,11 @@ class Experience
 			Experience.initialize_statics()
 		end
 
-		@experience = 65 # Total Experience
-		@loose = 0 # Loose experience (after this build)
-		@build = 30 # Total build
-		@history = [] # History for the purpose of undoing actions
-		@trail = [] # String trail, for YAML export
-		@traild= [] # Data trail, for YAML export
+		@experience = 65
+		@loose = 0
+		@build = 30
+		@history = []
+		@trail = []
 
 		if experience != nil or build != nil
 			if build != nil
@@ -66,10 +65,6 @@ public
 			s += t
 		end
 		return s
-	end
-
-	def export
-		@traild.clone
 	end
 
 	def level
@@ -201,7 +196,7 @@ public
 
 	# Used for events
 	def add_blankets count
-		self.add_experience((@build * count).round)
+		self.add_experience @build * count
 	end
 
 	# Used for goblin blankets
@@ -225,7 +220,6 @@ public
 		data = [] if data.nil?
 
 		@trail = []
-		@traild= []
 		# For Experience::undo
 		@history = []
 		@experience = 65
@@ -233,15 +227,15 @@ public
 		@loose = 0
 		data.each do |exp|
 			case exp['Type']
-			when 'Custom' then
-				self.add_custom(exp['Number'].to_f,exp['Times'].to_i)
-			when 'Goblin Blanket' then
+			when 'Custom':
+				self.add_custom(exp['Number'].to_i,exp['Times'].to_i)
+			when 'Goblin Blanket':
 				self.add_goblin_blankets(exp['Date'],exp['Number'].to_i)
-			when 'PC Event' then
-				self.add_pc_event(exp['Site'],exp['Date'],exp['Days'].to_f,exp['Maxout'])
-			when 'NPC Event' then
-				self.add_npc_event(exp['Site'],exp['Date'],exp['Days'].to_f,exp['Maxout'])
-			when 'Reset' then
+			when 'PC Event':
+				self.add_pc_event(exp['Site'],exp['Date'],exp['Days'].to_i,exp['Maxout'])
+			when 'NPC Event':
+				self.add_npc_event(exp['Site'],exp['Date'],exp['Days'].to_i,exp['Maxout'])
+			when 'Reset':
 				hash = {}
 				hash[:experience] = exp['Experience']
 				hash[:build] = exp['Build']
@@ -259,7 +253,6 @@ public
 		end
 		item = @history.pop
 		@trail.pop
-		@traild.pop
 		if item.length > 3
 			@experience = item[0]
 			@build = item[1]
@@ -269,32 +262,26 @@ public
 	end
 
 	def add_goblin_blankets date, amount
-		trail_string  = "   - Type: Goblin Blanket\n"
-		trail_string += "     Date: #{date}\n"
-		trail_string += "     Number: #{amount}\n"
-		trail_data = {"Type" => "Goblin Blanket", "Date" => date, "Number" => amount}
-
-		@trail << trail_string
-		@traild<< trail_data
+		trail_data  = "   - Type: Goblin Blanket\n"
+		trail_data += "     Date: #{date}\n"
+		trail_data += "     Number: #{amount}\n"
+		@trail << trail_data
 		
 		update_history 'goblins', amount * @build
 		self.add_sequential_blankets 1, amount.to_i
 	end
 
 	def add_pc_event event_name, date, days, maxout
-		trail_string  = "   - Type: PC Event\n"
-		trail_string += "     Site: #{event_name}\n"
-		trail_string += "     Date: #{date}\n"
-		trail_string += "     Days: #{days}\n"
-		trail_string += "     Maxout: #{maxout}\n"
-		trail_data   = {"Type" => "PC Event","Site" => event_name, "Date"=>date,"Days"=>days,"Maxout"=>maxout}
-
-		@trail << trail_string
-		@traild<< trail_data
+		trail_data  = "   - Type: PC Event\n"
+		trail_data += "     Site: #{event_name}\n"
+		trail_data += "     Date: #{date}\n"
+		trail_data += "     Days: #{days}\n"
+		trail_data += "     Maxout: #{maxout}\n"
+		@trail << trail_data
 
 		# maxout can be true, false, or an integer
 		if maxout == false or maxout == true
-			b = (maxout ? days : 0.5 * days )
+			b = (experience ? days : days / 2.0)
 
 			update_history 'pc event', b * @build
 			self.add_blankets b
@@ -302,7 +289,7 @@ public
 			experience = @build
 			maxout = maxout.to_i
 			if maxout > @build
-				$log.warn "Maxout requested too big by #{maxout - @build}"
+				puts "Maxout requested too big by #{maxout - @build}"
 				experience += @build
 			else
 				experience += maxout
@@ -314,15 +301,12 @@ public
 	end
 
 	def add_npc_event event_name, date, days, maxout
-		trail_string  = "   - Type: NPC Event\n"
-		trail_string += "     Site: #{event_name}\n"
-		trail_string += "     Date: #{date}\n"
-		trail_string += "     Days: #{days}\n"
-		trail_string += "     Maxout: #{maxout}\n"
-		trail_data    = {"Type" => "NPC Event", "Site" => event_name, "Date"=>date,"Days"=>days,"Maxout"=>maxout}
-
-		@trail << trail_string
-		@traild<< trail_data
+		trail_data  = "   - Type: NPC Event\n"
+		trail_data += "     Site: #{event_name}\n"
+		trail_data += "     Date: #{date}\n"
+		trail_data += "     Days: #{days}\n"
+		trail_data += "     Maxout: #{maxout}\n"
+		@trail << trail_data
 
 		b = days / 2.0
 		if maxout == true
@@ -335,57 +319,47 @@ public
 	end
 
 	def add_custom num_of_blankets, num_of_series
-		trail_string  = "   - Type: Custom\n"
-		trail_string += "     Number: #{num_of_blankets}\n"
-		trail_string += "     Times: #{num_of_series}\n"
-		trail_data    = {"Type" => "Custom", "Number" => num_of_blankets, "Times" => num_of_series}
-
-		@trail << trail_string
-		@traild<< trail_data
+		trail_data  = "   - Type: Custom\n"
+		trail_data += "     Number: #{num_of_blankets}\n"
+		trail_data += "     Times: #{num_of_series}\n"
+		@trail << trail_data
 		
-		update_history 'custom',  num_of_blankets * num_of_series * @build
-		add_sequential_blankets num_of_blankets, num_of_series
+		update_history 'custom',  * @build
+		add_sequential_blankets num_of_series, num_of_series
 	end
 
 
 	def reset data = {}
-		trail_string  = "   - Type: Reset\n"
+		trail_data  = "   - Type: Reset\n"
 
-		trail_data = {"Type"=>"Reset"}
-
-		if !data[:experience].nil?
-			trail_string += "     Experience: #{data[:experience]}\n"
-			trail_data["Experience"] = data[:experience]
+		if data[:experience] != nil
+			trail_data += "     Experience: #{data[:experience]}\n"
 		end
-		if !data[:build].nil?
-			trail_string += "     Build: #{data[:build]}\n"
-			trail_data["Build"] = data[:build]
+		if data[:build] != nil
+			trail_data += "     Build: #{data[:build]}\n"
 		end
-		if !data[:level].nil?
-			trail_string += "     Level: #{data[:level]}\n"
-			trail_data["Level"] = data[:level]
+		if data[:level] != nil
+			trail_data += "     Level: #{data[:level]}\n"
 		end
-		if !data[:loose].nil?
-			trail_string += "     Loose: #{data[:loose]}\n"
-			trail_data["Loose"] = data[:loose]
+		if data[:loose] != nil
+			trail_data += "     Loose: #{data[:loose]}\n"
 		end
 
-		@trail << trail_string
-		@traild<< trail_data
+		@trail << trail_data
 
-		if !data[:experience].nil?
+		if data[:experience] != nil
 			self.experience= data[:experience]
 		end
 
-		if !data[:build].nil?
+		if data[:build] != nil
 			self.build= data[:build]
 		end
 
-		if !data[:level].nil?
-			self.build= data[:level] * 10 + 5
+		if data[:level] != nil
+			self.build= data[:level]
 		end
 
-		if !data[:loose].nil? and loose > 0
+		if data[:loose] != nil and loose > 0
 			self.loose= data[:loose]
 		end
 	end
@@ -393,76 +367,71 @@ end
 
 
 def e_data e
-	$log.info e
-	$log.info "Experience: #{e.experience}"
-	$log.info "Build: #{e.build}"
-	$log.info "Loose: #{e.loose}"
-	$log.info "Level: #{e.level}"
+	puts e
+	puts "Experience: #{e.experience}"
+	puts "Build: #{e.build}"
+	puts "Loose: #{e.loose}"
+	puts "Level: #{e.level}"
 end
 
 # Testing the experience module
 if __FILE__ == $0
-	$log = Logger.new('experience.log',10,102400)
-	$log.info "Testing experience.rb"
-
-
-
-	$log.info "> e = Experience.new()"
+	puts "> e = Experience.new()"
 	e = Experience.new()
 	e_data(e)
 	
-	$log.info "> e.add_goblin_blankets(Date.new(2009,4,11),4)"
+	puts "> e.add_goblin_blankets(Date.new(2009,4,11),4)"
 	e.add_goblin_blankets(Date.new(2009,4,11),4)
 	e_data(e)
 
-	$log.info "> e.add_pc_event('Ashton',Date.new(2008,5,14),2,true)"
+	puts "> e.add_pc_event('Ashton',Date.new(2008,5,14),2,true)"
 	e.add_pc_event('Ashton',Date.new(2008,5,14),2,true)
 	e_data(e)
 
-	$log.info "> e.add_npc_event('Vargus',Date.new(2008,6,6),2,true)"
+	puts "> e.add_npc_event('Vargus',Date.new(2008,6,6),2,true)"
 	e.add_npc_event('Vargus',Date.new(2008,6,6),2,true)
 	e_data(e)
 
-	$log.info "> e.add_pc_event('Oasis',Date.new(2008,7,18),2,100)"
+	puts "> e.add_pc_event('Oasis',Date.new(2008,7,18),2,100)"
 	e.add_pc_event('Oasis',Date.new(2008,7,18),2,100)
 	e_data(e)
 
-	$log.info "> e.reset('Test',Date.new(2008,8,25),43650)"
+	puts "> e.reset('Test',Date.new(2008,8,25),43650)"
 	e.reset("Test",Date.new(2008,8,25),43650)
 	e_data(e)
 	
-	$log.info "> e.reset('Test',Date.new(2008,8,25),nil,206,nil)"
+	puts "> e.reset('Test',Date.new(2008,8,25),nil,206,nil)"
 	e.reset("Test",Date.new(2008,8,25),nil,206,nil)
 	e_data(e)
 	e.reset("Test",Date.new(2008,8,25),nil,204,75)
 	e_data(e)
 	
 =begin	
-	$log.info "> e.undo"
+	puts "> e.undo"
 	e.undo
 	e_data(e)
 	
-	$log.info "> e.undo"
+	puts "> e.undo"
 	e.undo
 	e_data(e)
 	
-	$log.info "> e.undo"
+	puts "> e.undo"
 	e.undo
 	e_data(e)
 	
-	$log.info "> e.undo"
+	puts "> e.undo"
 	e.undo
 	e_data(e)
 	
-	$log.info "> e.undo"
+	puts "> e.undo"
 	e.undo
 	e_data(e)
 	
-	$log.info "> e.undo"
+	puts "> e.undo"
 	e.undo
 	e_data(e)
 	
-	$log.info "> e.undo"
+	puts "> e.undo"
 	e.undo
 	e_data(e)
 =begin
