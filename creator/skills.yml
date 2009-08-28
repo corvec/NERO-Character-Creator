@@ -1,0 +1,731 @@
+Alchemy:
+   Requires:
+      - Herbal Lore
+   Max: 0
+   Cost:
+      Fighter: 6
+      Rogue: 3
+      Scholar: 4
+      Templar: 5
+Armorsmith:
+   Max: 0
+   Cost:
+      Dwarf Fighter: 2
+      Dwarf Rogue: 3
+      Dwarf Scholar: 3
+      Dwarf Templar: 2
+      Fighter: 3
+      Rogue: 4
+      Scholar: 4
+      Templar: 3
+Archery:
+   Cost:
+      Elf Fighter: 3
+      Elf Rogue: 5
+      Elf Scholar: 8
+      Elf Templar: 6
+      Fighter: 6
+      Rogue: 10
+      Scholar: 15
+      Templar: 12
+Assassinate/Dodge:
+   Max: 0
+   Requires:
+      Backstab: 2
+   Options:
+      - Hand
+   Cost:
+      Fighter: 6
+      Rogue: 10
+      Scholar: 15
+      Templar: 12
+Back Attack:
+   Max: 4
+   Requires:
+      - Weapon
+   Options:
+      - Hand
+   Cost:
+      Fighter: 6
+      Rogue: 3
+      Scholar: 6
+      Templar: 6
+Backstab:
+   Max: 0
+   Requires:
+      - Weapon
+   Options:
+      - Hand
+   Includes:
+      Back Attack: 4
+   Cost:
+      Fighter: 6
+      Rogue: 3
+      Scholar: 6
+      Templar: 6
+Break Charm:
+   Max: 0
+   Cost:
+      Biata: 2
+      Mystic Wood Elf: 2
+Celestial 1:
+   Max: 0
+   Requires:
+      - Read Magic
+   Cost:
+      Fighter: 3
+      Rogue: 2
+      Scholar: 1
+      Templar: 1
+Celestial 2:
+   Max: 0
+   Requires:
+      - Celestial 1
+   Cost:
+      Fighter: 3
+      Rogue: 2
+      Scholar: 1
+      Templar: 1
+Celestial 3:
+   Max: 0
+   Requires:
+      - Celestial 2
+   Cost:
+      Fighter: 6
+      Rogue: 4
+      Scholar: 2
+      Templar: 2
+Celestial 4:
+   Max: 0
+   Requires:
+      - Celestial 3
+   Cost:
+      Fighter: 6
+      Rogue: 4
+      Scholar: 2
+      Templar: 3
+Celestial 5:
+   Max: 0
+   Requires:
+      - Celestial 4
+   Cost:
+      Fighter: 9
+      Rogue: 6
+      Scholar: 3
+      Templar: 3
+Celestial 6:
+   Max: 0
+   Requires:
+      - Celestial 5
+   Cost:
+      Fighter: 9
+      Rogue: 6
+      Scholar: 3
+      Templar: 4
+Celestial 7:
+   Max: 0
+   Requires:
+      - Celestial 6
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 5
+Celestial 8:
+   Max: 0
+   Requires:
+      - Celestial 7
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 5
+Celestial 9:
+   Max: 0
+   Requires:
+      - Celestial 8
+   Cost:
+      Fighter: 15
+      Rogue: 10
+      Scholar: 5
+      Templar: 6
+Commune with Nature:
+   Cost:
+      Fighter: 6
+      Rogue: 6
+      Scholar: 3
+      Templar: 3
+Craftsman Other:
+   Max: 0
+   Options:
+      - Type
+   Cost:
+      Mystic Wood Elf: 2
+      Fighter: 3
+      Rogue: 3
+      Scholar: 3
+      Templar: 3
+Create Potion:
+   Requires:
+      - Earth 4
+   Cost:
+      Fighter: 6
+      Rogue: 5
+      Scholar: 3
+      Templar: 4
+Create Runes:
+   Requires:
+      - Nature 1
+   Cost:
+      Fighter: 6
+      Rogue: 5
+      Scholar: 3
+      Templar: 4
+Create Scroll:
+   Requires:
+      - Celestial 4
+   Cost:
+      Fighter: 6
+      Rogue: 5
+      Scholar: 3
+      Templar: 4
+Create Trap:
+   Max: 0
+   Requires:
+      - "Disarm/Arm Trap"
+   Cost:
+      Fighter: 6
+      Rogue: 3
+      Scholar: 4
+      Templar: 5
+Critical Attack:
+   Max: 4
+   Requires:
+      - Weapon
+   Cost:
+      Fighter: 3
+      Rogue: 4
+      Scholar: 8
+      Templar: [3, 4, 5]
+Critical Slay/Parry:
+   Max: 0
+   Requires:
+      Proficiency: 2
+   Options:
+      - Hand
+      - Weapon
+   Cost:
+      Fighter: 10
+      Rogue: 15
+      Scholar: 20
+      Templar: 15
+Detect Celestial Magic:
+   Max: 0
+   Cost:
+      Barbarian: 2
+Dexterity Armor:
+   Max: 5
+   Cost: 3
+"Disarm/Arm Trap":
+   Cost:
+      Fighter: 9
+      Rogue: 3
+      Scholar: 6
+      Templar: 9
+Earth 1:
+   Max: 0
+   Requires:
+      - Healing Arts
+   Cost:
+      Fighter: 3
+      Rogue: 2
+      Scholar: 1
+      Templar: 1
+Earth 2:
+   Max: 0
+   Requires:
+      - Earth 1
+   Cost:
+      Fighter: 3
+      Rogue: 2
+      Scholar: 1
+      Templar: 1
+Earth 3:
+   Max: 0
+   Requires:
+      - Earth 2
+   Cost:
+      Fighter: 6
+      Rogue: 4
+      Scholar: 2
+      Templar: 2
+Earth 4:
+   Max: 0
+   Requires:
+      - Earth 3
+   Cost:
+      Fighter: 6
+      Rogue: 4
+      Scholar: 2
+      Templar: 3
+Earth 5:
+   Max: 0
+   Requires:
+      - Earth 4
+   Cost:
+      Fighter: 9
+      Rogue: 6
+      Scholar: 3
+      Templar: 3
+Earth 6:
+   Max: 0
+   Requires:
+      - Earth 5
+   Cost:
+      Fighter: 9
+      Rogue: 6
+      Scholar: 3
+      Templar: 4
+Earth 7:
+   Max: 0
+   Requires:
+      - Earth 6
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 5
+Earth 8:
+   Max: 0
+   Requires:
+      - Earth 7
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 5
+Earth 9:
+   Max: 0
+   Requires:
+      - Earth 8
+   Cost:
+      Fighter: 15
+      Rogue: 10
+      Scholar: 5
+      Templar: 6
+Evaluate Item:
+   Max: 0
+   Cost:
+      Fighter: 6
+      Rogue: 3
+      Scholar: 6
+      Templar: 6
+First Aid:
+   Cost:
+      Fighter: 4
+      Rogue: 3
+      Scholar: 2
+      Templar: 2
+Florentine:
+   Requires:
+      - Weapon
+   Cost:
+      Fighter: 6
+      Rogue: 6
+      Scholar: 12
+      Templar: 8
+"Formal Magic (Earth)":
+   Max: 0
+   Requires:
+      - Earth 9
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 4
+"Formal Magic (Celestial)":
+   Max: 0
+   Requires:
+      - Celestial 9
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 4
+"Formal Magic (Nature)":
+   Max: 0
+   Requires:
+      - Nature 9
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 4
+"Gypsy Curse/Remove Gypsy Curse":
+   Cost:
+      Gypsy: 2
+Healing Arts:
+   Requires:
+      - First Aid
+      - Read and Write
+   Cost:
+      Fighter: 4
+      Rogue: 3
+      Scholar: 2
+      Templar: 2
+Herbal Lore:
+   Requires:
+      - Read and Write
+   Cost:
+      Fighter: 6
+      Rogue: 3
+      Scholar: 4
+      Templar: 5
+Hobling Dodge:
+   Cost:
+      Hobling: 10
+Master Critical Attack:
+   Max: 4
+   Requires:
+      - Weapon
+   Options:
+      - Hand
+   Cost:
+      Fighter: 3
+      Rogue: [4, 4, 6]
+      Scholar: 8
+      Templar: [4, 4, 6]
+Master Critical Slay/Parry:
+   Max: 0
+   Requires:
+      Master Proficiency: 2
+   Options:
+      - Hand
+   Cost:
+      Fighter: 13
+      Rogue: 18
+      Scholar: 25
+      Templar: 18
+Master Proficiency:
+   Max: 0
+   Requires:
+      - Weapon
+   Options:
+      - Hand
+   Includes:
+      Master Critical Attack: 4
+      Proficiency: 1
+   Cost:
+      Fighter: 17
+      Rogue: [23, 24, 32]
+      Scholar: 44
+      Templar: [23, 24, 32]
+Nature 1:
+   Max: 0
+   Requires:
+      - Runes of Nature
+   Cost:
+      Fighter: 3
+      Rogue: 2
+      Scholar: 1
+      Templar: 1
+Nature 2:
+   Max: 0
+   Requires:
+      - Nature 1
+   Cost:
+      Fighter: 3
+      Rogue: 2
+      Scholar: 1
+      Templar: 1
+Nature 3:
+   Max: 0
+   Requires:
+      - Nature 2
+   Cost:
+      Fighter: 6
+      Rogue: 4
+      Scholar: 2
+      Templar: 2
+Nature 4:
+   Max: 0
+   Requires:
+      - Nature 3
+   Cost:
+      Fighter: 6
+      Rogue: 4
+      Scholar: 2
+      Templar: 3
+Nature 5:
+   Max: 0
+   Requires:
+      - Nature 4
+   Cost:
+      Fighter: 9
+      Rogue: 6
+      Scholar: 3
+      Templar: 3
+Nature 6:
+   Max: 0
+   Requires:
+      - Nature 5
+   Cost:
+      Fighter: 9
+      Rogue: 6
+      Scholar: 3
+      Templar: 4
+Nature 7:
+   Max: 0
+   Requires:
+      - Nature 6
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 5
+Nature 8:
+   Max: 0
+   Requires:
+      - Nature 7
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 5
+Nature 9:
+   Max: 0
+   Requires:
+      - Nature 8
+   Cost:
+      Fighter: 15
+      Rogue: 10
+      Scholar: 5
+      Templar: 6
+One Handed Blunt:
+   Includes:
+      - Weapon
+   Cost:
+      Fighter: 3
+      Rogue: 4
+      Scholar: 8
+      Templar: 5
+One Handed Edged:
+   Includes:
+      - Weapon
+   Cost:
+      Fighter: 5
+      Rogue: 5
+      Scholar: 10
+      Templar: 7
+One Handed Weapon Master:
+   Includes:
+      - One Handed Edged
+      - One Handed Blunt
+      - Small Weapon
+   Cost:
+      Fighter: 8
+      Rogue: 10
+      Scholar: 14
+      Templar: 10
+Pick Locks:
+   Cost:
+      Fighter: 9
+      Rogue: 3
+      Scholar: 9
+      Templar: 9
+Polearm:
+   Includes:
+      - Weapon
+   Cost:
+      Fighter: 8
+      Rogue: 10
+      Scholar: 12
+      Templar: 10
+Proficiency:
+   Includes:
+      Critical Attack: 4
+   Requires:
+      - Weapon
+   Max: 0
+   Options:
+      - Hand
+      - Weapon
+   Cost:
+      Fighter: 15
+      Rogue: 20
+      Scholar: 40
+      Templar: [15, 20, 25]
+Read and Write:
+   Scholarly: True
+   Cost:
+      Fighter: 6
+      Rogue: 6
+      Scholar: 3
+      Templar: 3
+Read Magic:
+   Scholarly: True
+   Requires:
+      - Read and Write
+   Prohibits:
+      - Biata
+   Cost:
+      Dwarf Fighter: 16
+      Dwarf Rogue: 12
+      Dwarf Scholar: 8
+      Dwarf Templar: 8
+      Fighter: 8
+      Rogue: 6
+      Scholar: 4
+      Templar: 4
+Resist Charm:
+   Max: 0
+   Cost:
+      Biata: 3
+      Drae: 3
+      Elf: 3
+      Mystic Wood Elf: 3
+Resist Poison:
+   Max: 0
+   Cost:
+      Dwarf: 4
+      Hobling: 4
+      Sarr: 4
+      Scavenger: 4
+Resist Sleep:
+   Max: 0
+   Cost:
+      Biata: 2
+      Drae: 2
+      Elf: 2
+Runes of Nature:
+   Requires:
+      - Commune with Nature
+   Cost:
+      Fighter: 8
+      Rogue: 6
+      Scholar: 4
+      Templar: 4
+Shield:
+   Includes:
+      - Weapon
+   Cost:
+      Fighter: 5
+      Rogue: 10
+      Scholar: 15
+      Templar: 7
+Small Weapon:
+   Includes:
+      - Weapon
+   Cost: 2
+Smithing:
+   Max: 0
+   Includes:
+      - [Armorsmith]
+      - [Weaponsmith]
+   Cost:
+      Dwarf Fighter: 2
+      Dwarf Rogue: 3
+      Dwarf Scholar: 3
+      Dwarf Templar: 2
+      Fighter: 3
+      Rogue: 4
+      Scholar: 4
+      Templar: 3
+Staff:
+   Includes:
+      - Weapon
+   Cost: 4
+Strongarm:
+   Cost:
+      Half Orc: 10
+Style Master:
+   Includes:
+      - Florentine
+      - Two Weapons
+      - Shield
+   Cost:
+      Fighter: 10
+      Rogue: 15
+      Scholar: 20
+      Templar: 15
+Thrown Weapon:
+   Includes:
+      - Weapon
+   Cost: 4
+Two Handed Blunt:
+   Includes:
+      - Weapon
+   Cost:
+      Fighter: 6
+      Rogue: 8
+      Scholar: 12
+      Templar: 8
+Two Handed Sword:
+   Includes:
+      - Weapon
+   Cost:
+      Fighter: 8
+      Rogue: 12
+      Scholar: 16
+      Templar: 12
+Two Handed Weapon Master:
+   Includes:
+      - Polearm
+      - Two Handed Blunt
+      - Two Handed Sword
+   Cost:
+      Fighter: 12
+      Rogue: 14
+      Scholar: 18
+      Templar: 14
+Two Long Weapons:
+  Requires:
+      - Two Weapons
+  Cost:
+      Fighter: 2
+      Rogue: 4
+      Scholar: 6
+      Templar: 4
+Two Weapons:
+   Requires:
+      - Florentine
+   Cost:
+      Fighter: 2
+      Rogue: 4
+      Scholar: 4
+      Templar: 4
+Waylay:
+   Cost:
+      Fighter: 12
+      Rogue: 6
+      Scholar: 12
+      Templar: 12
+Weapon Master:
+   Includes:
+      - One Handed Weapon Master
+      - Two Handed Weapon Master
+   Cost:
+      Fighter: 15
+      Rogue: 18
+      Scholar: 20
+      Templar: 18
+Weaponsmith:
+   Max: 0
+   Includes:
+      - [Armorsmith]
+      - [Weaponsmith]
+   Cost:
+      Dwarf Fighter: 2
+      Dwarf Rogue: 3
+      Dwarf Scholar: 3
+      Dwarf Templar: 2
+      Fighter: 3
+      Rogue: 4
+      Scholar: 4
+      Templar: 3
+Wear Extra Armor:
+   Cost:
+      Fighter: 2
+      Rogue: 2
+      Scholar: 4
+      Templar: 2
