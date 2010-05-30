@@ -20,15 +20,17 @@
 
 require 'experience.rb'
 require 'build.rb'
+require 'logger.rb'
 require 'date'
 require 'yaml'
 
 
-# This regards the data on the Info screen
+# The NERO_Character class contains all information associated with the character
+# It also references the character's Build and Experience
 class NERO_Character
 	attr_reader :player_name, :name, :date_created, :race, :subrace, :character_class
 	attr_writer :player_name, :name, :date_created, :subrace, :backstory
-	attr_reader :experience, :primary, :secondary, :backstory, :build, :spirit_effects, :body_effects
+	attr_reader :experience, :primary, :secondary, :backstory, :build, :spirit_effects, :body_effects, :death_history
 	def initialize(filename=nil)
 		@player_name = ''
 		@name = ''
@@ -54,6 +56,8 @@ class NERO_Character
 		end
 	end
 
+	# Assign the character's primary school of magic
+	# Ensure the secondary is not the new primary; if it is, set the secondary to be the old primary
 	def primary= school
 		if @secondary == school
 			@secondary = @primary
@@ -61,6 +65,8 @@ class NERO_Character
 		@primary = school
 	end
 
+	# Assign the character's secondary school of magic
+	# Ensure the primary is not the new secondary; if it is, set the primary to be the old secondary
 	def secondary= school
 		if @primary == school
 			@primary = @secondary
@@ -68,6 +74,9 @@ class NERO_Character
 		@secondary = school
 	end
 
+	# Calculate the character's body based on level, class, and race
+	#
+	# Class and race calculations are hard-coded.
 	def calculate_body
 		body = 0
 		case @character_class.name
@@ -78,26 +87,29 @@ class NERO_Character
 		when 'Templar'
 			body = @experience.level + 3
 		when 'Scholar'
-			body = @experience.level * (0.666667) + 3
+			body = ((@experience.level - 1) * (0.666667) + 3).round
 		end
 
 		case @race.race
-		when 'Barbarian':
+		when 'Barbarian' then
 			body += 2
-		when 'Half Orc':
+		when 'Half Orc' then
 			body += 2
-		when 'Half Ogre':
+		when 'Half Ogre' then
 			body += 2
-		when 'Dwarf':
+		when 'Dwarf' then
 			body += 1
-		when 'Elf':
+		when 'Elf' then
 			body -= 1
-		when 'Hobling':
+		when 'Hobling' then
 			body -= 1
 		end
 		return body
 	end
 
+	# Set the character's class.
+	#
+	# Hobling Fighter prohibition is hard-coded.
 	def character_class=( c_class )
 		if @race.race == 'Hobling' and c_class == 'Fighter'
 			return
@@ -105,19 +117,50 @@ class NERO_Character
 		@character_class.name= c_class
 	end
 
+	# Set the character's race.
+	#
+	# Hobling Fighter restriction is hard-coded and technically non-standard:
+	# it sets the class to rogue if you attempt to change to a hobling as a fighter.
+	# Technically it should instead revert the race, but I felt that would be unintuitive for the user.
 	def race=( race )
 		if @character_class.name == 'Fighter' and race == 'Hobling'
-			return
+			self.character_class = 'Rogue'
 		end
 		@race.race= race
 		@build.legalize
 	end
 
+	# Return the total build spent.  This may be more than the character's total build.
 	def build_spent()
 		return @build.calculate_cost
 	end
 
-	#attr_reader :name, :date_created, :race, :subrace, :character_class, :primary, :secondary
+	# Return a YAML string that could be used to recreate this character
+	def to_yaml
+		YAML.dump self.export
+	end
+	
+	def export
+		return {'Info' => 
+			{	'Player Name' => @player_name,
+				'Character Name' => @name,
+				'Created' => @date_created,
+				'Race' => @race.to_s,
+				'Subrace' => @subrace,
+				'Class' => @character_class.to_s,
+				'Primary School' => @primary,
+				'Secondary School' => @secondary,
+				'Death History' => @death_history.export,
+				'Spirit Effects' => @spirit_effects.export,
+				'Body Effects' => @body_effects.export
+			},
+			'Build' => @build.export,
+			'Experience' => @experience.export,
+			'Backstory' => @backstory
+		}
+	end
+
+	# Return a YAML string that could be used to recreate this character.
 	def to_s
 		s = "Info:\n"
 		indent = '   '
@@ -139,6 +182,288 @@ class NERO_Character
 		return s
 	end
 
+	def to_html
+		s = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link href="./css/print_style.css" rel="stylesheet" type="text/css" />
+<title>'
+
+		s += "#{@player_name} - #{@name} - Temporary Character Sheet"
+
+
+		s += '</title>
+</head>
+<body style="font-size:12px">
+<table width="600" border="0">
+	<tr>
+		<td align="right"><strong>Character Name:</strong></td>
+		<td><span id="c_name">'
+		s += @name
+		s += '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td align="right"><strong>Total Build:</strong></td>
+		<td><span id="t_build">'
+
+		s += @experience.build.to_s
+
+		s += '</span></td>
+	</tr>
+	<tr>
+		<td align="right"><strong>Player Name:</strong></td>
+		<td><span id="player_name">'
+
+		s+= @player_name
+
+		s+= '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td align="right"><strong>Spent Build:</strong></td>
+		<td><span id="l_build">'
+
+		s += @build.cost().to_s
+		
+		s += '</span></td>
+	</tr>
+	<tr>
+		<td align="right"><strong>Home Chapter:</strong></td>
+		<td><span id="home_c">'
+		
+		begin
+			File.open($data_path + 'chapter.ini','r') { |f|
+				s += f.gets
+			}
+		rescue
+			return ''
+		end
+
+		
+		s += '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td align="right"><strong>Total XP:</strong></td>
+		<td><span id="t_xp">'
+
+		s += @experience.experience.to_s
+
+		s += '</span></td>
+	</tr>
+	<tr>
+		<td align="right"><strong>Race:</strong></td>
+		<td><span id="race">'
+
+		s += self.race.race
+		unless self.subrace.empty?
+			s += " (#{self.subrace})"
+		end
+
+		s += '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td align="right"><strong>Loose XP:</strong></td>
+		<td><span id="l_xp">'
+		
+		s += @experience.loose.to_s
+		
+		s += '</span></td>
+	</tr>
+	<tr>
+		<td align="right"><strong>Class:</strong></td>
+		<td><span id="c_class">'
+		
+		s += self.character_class.to_s
+		
+		s += '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td align="right"><strong>XP per BP: </strong></td>
+		<td><span id="XPBP">'
+
+		s += Experience::xp_required_per_bp(@experience.level).to_s
+
+		s += '</span></td>
+	</tr>
+	<tr>
+		<td align="right"><strong>Level:</strong></td>
+		<td><span id="level">'
+		
+		s += @experience.level.to_s
+		
+		s += '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td align="right"><strong>Updated:</strong></td>
+		<td><span id="tracker">'
+		
+		s += Time.now().strftime('%m/%d/%Y %I:%M:%S%P')
+		
+		s += '</span></td>
+	</tr>
+	<tr>
+		<td align="right"><strong>Body Points: </strong></td>
+		<td><span id="body_p">'
+
+		s += self.calculate_body.to_s
+
+		s += '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td align="right"><strong>Static Deaths: </strong></td>
+		<td><span id="s_death">'
+
+		s += self.death_history.static_deaths.to_s
+
+		s += '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td align="right"><strong>Loose Deaths: </strong></td>
+		<td><span id="l_death">'
+
+		s += self.death_history.loose_deaths.to_s
+
+		s += '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td align="right"><strong>Last Spirit Forge: </strong></td>
+		<td><span id="LSF">'
+
+		unless self.death_history.spirit_forges.empty?
+			date = self.death_history.spirit_forges[-1]['Date']
+			s += "#{date.year}-#{date.month}-#{date.day}"
+		end
+
+		s += '</span></td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+</table>
+<p>&nbsp;</p>
+<table width="542" border="0">
+	<tr>
+		<td>&nbsp;</td>
+		<td><div align="left"><strong>School</strong></div></td>
+		<td><div align="center"><strong>1</strong></div></td>
+		<td><div align="center"><strong>2</strong></div></td>
+		<td><div align="center"><strong>3</strong></div></td>
+		<td><div align="center"></div></td>
+		<td><div align="center"><strong>4</strong></div></td>
+		<td><div align="center"><strong>5</strong></div></td>
+		<td><div align="center"><strong>6</strong></div></td>
+		<td><div align="center"></div></td>
+		<td><div align="center"><strong>7</strong></div></td>
+		<td><div align="center"><strong>8</strong></div></td>
+		<td><div align="center"><strong>9</strong></div></td>
+		<td>&nbsp;</td>
+		<td><div align="center"><strong>Spent</strong></div></td>
+	</tr>
+	<tr>
+		<td width="70"><div align="right"><strong>Primary:</strong></div></td>
+
+		<td width="80"><span id="primary">'
+
+		s += @primary
+
+		s += "</span></td>\n"
+
+		[1,2,3,0,4,5,6,0,7,8,9].each do |spell_level|
+			if spell_level == 0
+				s += "\t\t<td width=\"25\"><div align=\"center\"></div></td>\n"
+			else
+				s += "\t\t<td width=\"25\"><div align=\"center\"><span id=\"p#{spell_level}\">#{@build.spell_at(@primary, spell_level)}</span></div></td>\n"
+			end
+		end
+
+		s += '		<td width="25">&nbsp;</td>
+	<td width="30"><div align="center"><span id="ptotal">'
+
+		s += @build.spells_cost(@primary).to_s
+	
+		s += '</span></div></td>
+	</tr>
+	<tr>
+
+		<td><div align="right"><strong>Secondary:</strong></div></td>
+		<td><span id="secondary">'
+		
+		s += @secondary
+		
+		s += "</span></td>\n"
+		[1,2,3,0,4,5,6,0,7,8,9].each do |spell_level|
+			if spell_level == 0
+				s += "\t\t<td width=\"25\"><div align=\"center\"></div></td>\n"
+			else
+				s += "\t\t<td width=\"25\"><div align=\"center\"><span id=\"p#{spell_level}\">#{@build.spell_at(@secondary, spell_level)}</span></div></td>\n"
+			end
+		end
+		s += '<td>&nbsp;</td>
+	<td><div align="center"><span id="stotal">'
+
+		s += @build.spells_cost(@secondary).to_s
+
+		s += "\t\t</span></div></td>\n</tr>\n</table>\n"
+
+		s += '<p>&nbsp;</p>
+<table width="650" border="0">
+	<tr>
+		<td><div align="right"><strong>Skill Name</strong></div></td>
+		<td><div align="center"><strong>Num</strong></div></td>
+		<td><div align="center"><strong>Cost</strong></div></td>
+		<td><div align="left"><strong>Options</strong></div></td>
+	</tr>
+'
+
+		@build.skills.each_with_index do |skill, i|
+			s += "\t<tr>\n\t\t<td align=\"right\"><span id=\"skill#{i}\">#{skill.name}</span></td>\n"
+			s += "\t\t<td align=\"center\"><span id=\skill#{i}_num\">#{skill.count}</span></td>\n"
+    		s += "\t\t<td align=\"center\"><span id=\"skill#{i}_cost\">#{skill.cost}</span></td>\n"
+    		s += "\t\t<td align=\"left\"><span id=\"skill#{i}_option\">"
+			
+			skill.options.each do |option, value|
+				s += "(#{option}: #{value}) "
+			end
+
+			s += "</span></td>\n\t</tr>"
+		end
+
+		s += '</table>
+<table width="600">
+<tr>
+<td><strong>Notes</strong></td>
+</tr>
+<tr>
+<td><span id="notes"><div id="text">'
+
+		s += "THIS IS A TEMPORARY CHARACTER SHEET GENERATED ON SITE.<br />\n"
+		s += @spirit_effects.to_html
+		s += @body_effects.to_html
+		s += @backstory.gsub("\n","<br />\n")
+
+		s += '</div></span></td>
+</tr>
+</table>
+</body>
+</html>'
+		
+		$log.debug "HTML: #{s}"
+		return s
+	end
+
 	def write filename
 		File.open(filename,'w') do |f|
 			f.write(self.to_s())
@@ -146,22 +471,27 @@ class NERO_Character
 	end
 
 	def load filename
-		yaml_parse = YAML.load(File.open(filename, 'r'))
-		info = yaml_parse['Info']
-		@player_name = info['Player Name']
-		@name = info['Character Name']
-		@date_created = info['Created']
-		@race = NERO_Race.new info['Race']
-		@character_class = NERO_Class.new info['Class']
-		@primary = info['Primary School']
-		@secondary = info['Secondary School']
-		@death_history = Death_History.new info['Death History'], 1
-		@spirit_effects = Formal_Effects.new 'Spirit', info['Spirit Effects'], 1
-		@body_effects = Formal_Effects.new 'Body', info['Body Effects'], 1
-
-		@build.load(yaml_parse['Build'])
-		@experience.load(yaml_parse['Experience'])
-		@backstory = yaml_parse['Backstory']
+		begin
+			yaml_parse = YAML.load(File.open(filename, 'r'))
+			info = yaml_parse['Info']
+			@player_name = info['Player Name']
+			@name = info['Character Name']
+			@date_created = info['Created']
+			@race = NERO_Race.new info['Race']
+			@character_class = NERO_Class.new info['Class']
+			@primary = info['Primary School']
+			@secondary = info['Secondary School']
+			@death_history = Death_History.new info['Death History'], 1
+			@spirit_effects = Formal_Effects.new 'Spirit', info['Spirit Effects'], 1
+			@body_effects = Formal_Effects.new 'Body', info['Body Effects'], 1
+	
+			@build.load(yaml_parse['Build'])
+			@experience.load(yaml_parse['Experience'])
+			@backstory = yaml_parse['Backstory']
+		rescue
+			$log.error "Failed to load character!"
+			return false
+		end
 	end
 end
 
@@ -178,7 +508,7 @@ class Spell_Tree
 	# Sets the given spell to the specified amount
 	# Example parameters: spell = "Celestial 1", amount = 3
 	def set_spell( spell, amount )
-		puts "Spell_Tree::set_spell(#{spell},#{amount})"
+		$log.info "Spell_Tree::set_spell(#{spell},#{amount})"
 		@spells[spell.to_s.split(' ')[1].to_i - 1] = amount
 	end
 
@@ -187,7 +517,7 @@ class Spell_Tree
 	def spell spell
 		print spell
 		if spell.to_s.split(' ')[0] != @school
-			puts "Spell_Tree(#{@school})::spell(#{spell}) - passed spell is of inappropriate type"
+			$log.info "Spell_Tree(#{@school})::spell(#{spell}) - passed spell is of inappropriate type"
 		end
 		@spells[spell.to_s.split(' ')[1].to_i - 1]
 	end
@@ -202,7 +532,7 @@ class Spell_Tree
 	end
 
 	def set_tree tree
-		puts "Build::set_tree(#{@school},#{tree.join '/'})"
+		$log.info "Build::set_tree(#{@school},#{tree.join '/'})"
 		tree.each_with_index do |spell_count, i|
 			@spells[i] = spell_count
 		end
@@ -263,16 +593,19 @@ class Death_History
 	attr_reader :deaths
 	def initialize death_list = nil, indent_level = 1
 		death_list = [] if death_list.nil?
+		$log.info "Loading Death List: [#{death_list.join(',')}]"
 		@deaths = death_list
 		@indent_l = indent_level
 		@indent = '   '
 	end
 
-	def add_death type, event=nil, date=nil
-		death = {'Type'=>type}
-		death[event] = event if event != nil
-		death[date]  = date if date != nil
+	def add_death type, date
+		death = {'Type'=>type, 'Date' => date}
 		@deaths << death
+	end
+
+	def white_stones
+		10 - self.black_stones
 	end
 
 	def black_stones
@@ -281,40 +614,112 @@ class Death_History
 		forges = []
 		@deaths.each do |death|
 			case death['Type']
-			when 'Death':
+			when 'Death' then
 				deaths += 1
-			when 'Obliterate':
+			when 'Obliterate' then
 				deaths += 3
-			when 'Buyback':
+			when 'Buyback' then
 				buybacks += 1
-			when 'Spirit Forge':
+			when 'Spirit Forge' then
 				forges << death
 			else
-				puts "#{death['Type']} not a recognized death type"
+				$log.warn "#{death['Type']} is not a recognized death type"
 			end
 		end
 		prev_forges = []
 		forge_deaths = 0
 		forges.each do |forge|
 			prev_forges.each do |prev|
-				if (forge['Date'] - prev).to_i < 365
+				if (forge['Date'] - prev['Date']).to_i.abs < 365
 					forge_deaths += 1
 				end
 			end
-			prev_forges << forge['Date']
+			prev_forges << forge
 		end
 
 		if deaths <= 1
-			return deaths + forge_deaths
+			return [0,[deaths + forge_deaths,9].min].max
 		end
 		if deaths > 1
-			after_buyback = deaths - buybacks
-			if after_buyback >= 1
-				return after_buyback + forge_deaths
-			else
-				return 1 + forge_deaths
+			return [9, [deaths - buybacks, 1].max + forge_deaths].min
+		end
+	end
+
+	def delete_last_entry
+		@deaths.pop
+	end
+
+	def static_deaths
+		deaths = 0
+		forges = []
+		@deaths.each do |death|
+			case death['Type']
+			when 'Death' then
+				deaths += 1
+			when 'Obliterate' then
+				deaths += 3
+			when 'Spirit Forge' then
+				forges << death
 			end
 		end
+		prev_forges = []
+		forge_deaths = 0
+		forges.each do |forge|
+			prev_forges.each do |prev|
+				if (forge['Date'] - prev['Date']).to_i.abs < 365
+					forge_deaths += 1
+				end
+			end
+			prev_forges << forge
+		end
+
+		return [2,deaths].min + forge_deaths
+	end
+
+	def loose_deaths
+		deaths = 0
+		@deaths.each do |death|
+			case death['Type']
+			when 'Death' then
+				deaths += 1
+			when 'Obliterate' then
+				deaths += 3
+			when 'Buyback' then
+				deaths -= 1
+			end
+		end
+		return [0,deaths-2].min
+	end
+
+	def spirit_forges
+		forges = []
+		@deaths.each do |death|
+			next if death['Type'] != 'Spirit Forge'
+			inserted = false
+			forges.each_with_index do |forge,i|
+				if death['Date'] < forge['Date']
+					inserted = true
+					forges.insert(i, death)
+					date_text = "#{death['Date'].year}-#{death['Date'].month}-#{death['Date'].day}"
+					$log.debug "Inserting forge at date #{date_text} at position #{i}"
+					break
+				end
+			end
+			#forges.each_with_index do |forge,i|
+			#	$log.debug "forges[#{i}] = #{forge['Date']}"
+			#end
+			forges << death unless inserted
+		end
+		return forges
+	end
+
+	def to_text
+		text = ""
+		@deaths.each do |death|
+			date_text = "#{death['Date'].year}-#{death['Date'].month}-#{death['Date'].day}"
+			text += "#{death['Type']} (#{date_text})\r\n"
+		end
+		return text
 	end
 
 	def to_s
@@ -326,6 +731,10 @@ class Death_History
 			s += "#{@indent * (@indent_l+1)}  Date:  \"#{death['Date'].gsub(/"/,'\"')}\"\n" if death.has_key? 'Date' and death['Date'].is_a? String
 		end
 		return s
+	end
+
+	def export
+		@deaths.clone
 	end
 end
 
@@ -367,7 +776,7 @@ class Formal_Effects
 
 	def set_effect i, effect
 		@effects[i]['Effect'] = effect
-		puts "Formal_Effects::set_effect(#{i},#{effect}) : #{@effects[i]['Effect']}"
+		$log.info "Formal_Effects::set_effect(#{i},#{effect}) : #{@effects[i]['Effect']}"
 	end
 
 	def set_expiration i, expiration
@@ -408,6 +817,10 @@ class Formal_Effects
 		return result
 	end
 
+	def export
+		self.effects()
+	end
+
 	def to_s
 		s = @indent * @indent_l + "#{@location} Effects:\n"
 		self.effects().each do |effect|
@@ -418,6 +831,15 @@ class Formal_Effects
 			s += "#{@indent * (@indent_l+1)}  Restriction: \"#{effect['Restriction'].gsub(/"/,'\"')}\"\n"
 		end
 		return s
+	end
+
+	def to_html
+		html = ""
+		self.effects().each do |effect|
+			html << "#{@location}: (#{effect['School']}, #{effect['Restriction']}, Expires #{effect['Expires']}) #{effect['Effect']}<br />\n"
+		end
+
+		return html
 	end
 end
 
@@ -457,7 +879,7 @@ class NERO_Race
 
 	attr_reader :race
 
-	def initialize(race = @@race_list[0])
+	def initialize(race = 'Human')
 		race = race.split.map! { |s| s.capitalize }.join ' '
 		@race = (@@race_list.include? race) ? race : @@race_list[0]
 	end
@@ -480,10 +902,11 @@ end
 
 # Local Testing
 if __FILE__ == $0
+	$log = Logger.new('character.log',10,102400)
+	$log.info "Testing character.rb"
+
+
 	$nero_skills = NERO_Skills.new
-
-
-	puts "Testing character.rb"
 
 	$c = NERO_Character.new
 

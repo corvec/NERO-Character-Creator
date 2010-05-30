@@ -12,15 +12,12 @@ It has the following features:
  * Tracks formal effects upon the spirit
  * Saves your character's back story
  * Makes it especially easy to determine your spell tree
+ * Tracks deaths and spirit forges
 
  
 The NERO Character Creator is currently in Beta but is very usable.  I'm looking for any sort of relevant feedback - opinions, bugs, feature requests, and so on.  Please send any relevant feedback to Corey.Kump@gmail.com with "NERO Character Creator" in the subject line.
 
 Known bugs:
  * Occasionally crashes on windows
- * Currently has a nonfunctional "Death Tracker."
- * 9th edition Waylay must be purchased as "Waylay 9"
- * Allows 8th edition and 9th edition skills to be mixed
- * Allows unlimited purchases of Waylay 9 and Stop Thrust
  
 Enjoy!

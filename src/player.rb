@@ -87,5 +87,10 @@ class NERO_Player
 	end
 end
 
-p = NERO_Player.new(name="Corvec")
+if __FILE__ == $0
+	$log = Logger.new('player.log',10,102400)
+	$log.info 'Testing player.rb'
+
+	p = NERO_Player.new(name="Corvec")
+end
 
