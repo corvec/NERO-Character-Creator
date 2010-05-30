@@ -36,6 +36,7 @@ class Build
 		end
 	end
 
+	# Fill with skills from a provided YAML structure
 	def load yaml_data
 		@skills = []
 
@@ -43,8 +44,9 @@ class Build
 			yaml_data = yaml_data['Build']
 		end
 
-		$yaml = yaml_data
-
+		if yaml_data.nil?
+			return
+		end
 		yaml_data.each do |skill|
 			if skill.is_a? String
 				self.add_skill skill, {}, 1, true
@@ -63,7 +65,7 @@ class Build
 	def skills
 		result = []
 		@skills.each do |skill|
-			result << skill if !skill.skill.is_a_spell?()
+			result << skill unless skill.skill.is_a_spell?()
 		end
 
 		return result
@@ -74,26 +76,26 @@ class Build
 	##########################################################################################
 
 	def set_spell( spell, amount )
-		if !spell.is_a? String
+		unless spell.is_a? String
 			spell = spell.name
 		end
-		puts "Build::set_spell(#{spell},#{amount})"
+		$log.info "Build::set_spell(#{spell},#{amount})"
 		@spells[spell.split(' ')[0]][spell.split(' ')[1].to_i - 1] = amount
-		#puts self.spell(spell)
+		$log.debug self.spell(spell)
 	end
 
 	def spell spell
 		val = spell_at(spell.to_s.split(' ')[0],spell.to_s.split(' ')[1].to_i - 1)
-		#puts "Build::spell(#{spell}):#{val}"
+		$log.debug "Build::spell(#{spell}):#{val}"
 		return val
 	end
 
 	def spell_at school, level
 		if !@spells.has_key?(school) or !(level.is_a? Integer) or (@spells[school].length < level) or (level < 1)
-			#puts "Build::spell_at(#{school},#{level}) : nil"
+			$log.debug "Build::spell_at(#{school},#{level}) : nil"
 			return 0
 		end
-		#puts "Build::spell_at(#{school},#{level}) : #{@spells[school][level - 1]}"
+		$log.debug "Build::spell_at(#{school},#{level}) : #{@spells[school][level - 1]}"
 		@spells[school][level - 1]
 	end
 
@@ -102,7 +104,7 @@ class Build
 	end
 
 	def set_tree school, tree
-		puts "Build::set_tree(#{school},#{tree.join '/'})"
+		$log.info "Build::set_tree(#{school},#{tree.join '/'})"
 		tree.each_with_index do |spell_count, i|
 			@spells[school][i] = spell_count
 		end
@@ -116,6 +118,7 @@ class Build
 		return cost
 	end
 
+	# Returns the cost of a spell slot of a particular level for this character
 	def spell_cost i
 		case @character.character_class.to_s
 		when 'Scholar'
@@ -131,14 +134,15 @@ class Build
 		end
 	end
 
+	# Forces an empty tree if the prereqs are not purchased
 	def legalize_spell_tree()
 		@spells['Earth'] = [0] * 9 if self.count('Healing Arts') <= 0
 		@spells['Celestial'] = [0] * 9 if self.count('Read Magic') <= 0
 		@spells['Nature'] = [0] * 9 if self.count('Runes of Nature') <= 0
 	end
 
+	# Returns true if the character can have ANY spells
 	def legal_tree?
-		# !Character_Skill.new($nero_skills.lookup("#{school} 1")).meets_prerequisites?
 		if @spells['Earth'][0] > 0 and self.count('Healing Arts') <= 0
 			return false
 		end
@@ -155,6 +159,7 @@ class Build
 	####### END SPELL TREE
 	##########################################################################################
 
+	# directly converts this to a YAML string
 	def to_s
 		s = "Build:\n"
 		@skills.each do |skill|
@@ -184,6 +189,37 @@ class Build
 		return s
 	end
 
+	# converts this into a structure that, when dumped by YAML, will be the same as the string above
+	def export
+		data = []
+		@skills.each do |skill|
+			if skill.skill.limit != 1 or skill.skill.options.length > 0
+				val = {skill.name => {}}
+				if skill.skill.limit != 1
+					val[skill.name]['Count'] = skill.count
+				end
+				skill.options.each do |o,v|
+					val[skill.name][o] = v
+				end
+				data << val
+			else
+				data << skill.name
+			end
+		end
+		@spells.each do |school, tree|
+			next if tree[0] <= 0
+			tree.each_with_index do |spell_amount, level|
+				break if spell_amount <= 0
+				skill_name = "#{school} #{level + 1}"
+				val = {skill_name => {}}
+				val[skill_name]['Count'] = spell_amount
+				data << val
+			end
+		end
+			
+		return data
+	end
+
 	def calculate_cost
       self.cost()
 	end
@@ -199,12 +235,12 @@ class Build
 	end
 
 	def add_skill(skill, options={}, amount=1, force=false)
-		#puts "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force})"
-		if !skill.is_a? NERO_Skill
+		$log.debug "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force})"
+		unless skill.is_a? NERO_Skill
 			skill = $nero_skills.lookup(skill)
 		end
 
-		if !skill.is_a? NERO_Skill
+		unless skill.is_a? NERO_Skill
 			return false
 		end
 
@@ -215,18 +251,18 @@ class Build
 			return false
 		end
 
-		if !options.is_a? Hash
+		unless options.is_a? Hash
 			options = parse_options(options,skill.name)
 		end
 
-		puts skill.options.length
+		$log.debug "Skill #{skill.name} has #{skill.options.length} options"
 
 		if options.length < skill.options.length
-			puts "Insufficienct options provided..."
+			$log.warn "Insufficienct options provided..."
 			return false
 		end
 
-		#puts "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force})"
+		$log.debug "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force})"
 
 		char_skill = Character_Skill.new skill, options, amount, @character
 
@@ -234,14 +270,14 @@ class Build
 			return false
 		end
 
-		if !force
-			if !char_skill.meets_prerequisites?(self)
-				puts "Build.add_skill(#{skill.name}): Prerequisites not met"
+		unless force
+			unless char_skill.meets_prerequisites?(self)
+				$log.warn "Build.add_skill(#{skill.name}): Prerequisites not met"
 				return false
 			end
 			@skills.each do |skill_to_check|
 				if char_skill.is_included_in?(skill_to_check.skill)
-					puts "Build.add_skill(#{skill.name}): Skill included in #{skill_to_check.name}"
+					$log.warn "Build.add_skill(#{skill.name}): Skill included in #{skill_to_check.name}"
 					return false
 				end
 			end
@@ -252,7 +288,7 @@ class Build
 
 
 		# Check its includes and if they're present, delete them
-		if !force
+		unless force
 			# skill is a simple list for Style Master, 
 			if skill.includes.is_a? String
 				self.delete_skill inc_skill
@@ -278,7 +314,7 @@ class Build
 
 	# Intended to be used by add_skill upon finding includes
 	# Does NOT check to ensure that the removed skill is not
-	# satisfying other requirements; for that, run Build.legal?()
+	# satisfying other requirements; for that, run build.legal?() or build.legally_delete_skill
 	def delete_skill skill, options = {}, ranks = 1
 		@skills.each do |cskill|
 			if cskill.skill.name == skill
@@ -291,10 +327,10 @@ class Build
 				if match
 					if cskill.count > ranks and ranks != 0
 						cskill.count= cskill.count - ranks
-						puts "Build.delete_skill(#{skill}) - #{ranks} rank(s) removed"
+						$log.info "Build.delete_skill(#{skill}) - #{ranks} rank(s) removed"
 					else
 						@skills.delete cskill
-						puts "Build.delete_skill(#{skill}) - Skill deleted"
+						$log.info "Build.delete_skill(#{skill}) - Skill deleted"
 					end
 					break
 				end
@@ -303,28 +339,31 @@ class Build
 	end
 
 	def legally_delete_skill skill, options = {}, ranks = 1
-		puts "Build::legally_delete_skill(#{skill})"
+		$log.info "Build::legally_delete_skill(#{skill})"
 		self.delete_skill skill, options, ranks
 
 		self.legalize
 	end
 
 	def legalize
+		domino = false
 		while !self.legal?
 			skills_to_delete = self.illegal_skills()
 			skills_to_delete.each do |skill|
-				puts "Deleting now illegal skill: #{skill}"
+				$log.warn "Build::legalize() - Deleting #{skill}"
+				domino = true
 				self.delete_skill skill
 			end
 			self.legalize_spell_tree()
 		end
-		return true
+		$log.debug "Build::legalize() - Domino: #{domino}"
+		return domino
 	end
 
 	def legal?
 		@skills.each do |s|
 			if !s.meets_prerequisites?(self, 0) or s.cost == false
-				puts "Build not legal.  #{s.skill.name} does not meet its prerequisites or is prohibited."
+				$log.debug "Build not legal.  #{s.skill.name} does not meet its prerequisites or is prohibited."
 				return false
 			end
 		end
@@ -375,7 +414,7 @@ class Build
 private
 	def force_add_skill(char_skill, force)
 		if self.count(char_skill.name, char_skill.options) > 0
-			puts "Build.force_add_skill(#{char_skill.name}): Increasing existing skill to #{char_skill.count + self.count(char_skill.name, char_skill.options)}"
+			$log.info "Build.force_add_skill(#{char_skill.name}): Increasing existing skill to #{char_skill.count + self.count(char_skill.name, char_skill.options)}"
 			@skills.each do |s|
 				if s.name == char_skill.name
 					options_match = true
@@ -393,7 +432,7 @@ private
 				end
 			end
 		else
-			puts "Build.force_add_skill(#{char_skill.name},#{char_skill.count}): Adding new skill"
+			$log.info "Build.force_add_skill(#{char_skill.name},#{char_skill.count}): Adding new skill"
 			@skills << char_skill
 		end
 	end
@@ -424,7 +463,7 @@ private
 			end
 		end
 
-		puts "Build.parse_options('#{options}','#{skill_name}') return length = #{results.length}"
+		$log.debug "Build.parse_options('#{options}','#{skill_name}') return length = #{results.length}"
 
 		return results
 	end
@@ -434,12 +473,15 @@ end
 
 # Localized Testing
 if __FILE__ == $0
-	$nero_skills = NERO_Skills.new 'skills.yml'
+	$log = Logger.new('build.log',10,102400)
+	$log.info "Testing build.rb"
+
+	$nero_skills = NERO_Skills.new 'data/skills.yml'
 
 
 	b = Build.new 'test.yml'
 	b.calculate_cost
-	puts b.count('One Handed Edged', {})
+	$log.info b.count('One Handed Edged', {})
 	$b = b
 	b.add_skill("One Handed Edged")
 	o = {'Hand' => 'Left','Weapon' => 'Short Sword'}
@@ -452,11 +494,11 @@ if __FILE__ == $0
 	b.add_skill("Two Weapons")
 	b.add_skill("Style Master")
 	b.add_skill("Shield")
-	puts "Prof Count: #{b.count('Proficiency',o)}"
+	$log.info "Prof Count: #{b.count('Proficiency',o)}"
 	b.add_skill("Critical Slay/Parry",o, 1)
 	b.add_skill("Alchemy",nil, 1)
-	puts b.to_s
-	puts "Total Cost for a Barbarian Fighter: #{b.calculate_cost 'Fighter','Barbarian','Nature'}"
+	$log.info b.to_s
+	$log.info "Total Cost for a Barbarian Fighter: #{b.calculate_cost 'Fighter','Barbarian','Nature'}"
 
 	require 'irb'
 	require 'irb/completion'

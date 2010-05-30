@@ -21,9 +21,9 @@
 # Handles access to the list of skills
 class NERO_Skills
 	attr_reader :skills
-	def initialize(filename = 'skills.yml')
+	def initialize(filename = $data_path + 'skills.yml')
 		skills = YAML::load(File.open(filename))
-		puts "Initializing Skills"
+		$log.info "Initializing Skills"
 		@skills = {}
 		skills.each do |name, prop|
 			skill = NERO_Skill.new(
@@ -238,5 +238,11 @@ class NERO_Skill
 	def is_a_spell?
 		@name.match /\w \d/
 	end
-
 end
+
+if __FILE__ == $0
+	$log = Logger.new('nero_skills.log',10,102400)
+	$log.info "Testing nero_skills.rb"
+	$log.warn "Nothing to test!"
+end
+

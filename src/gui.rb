@@ -18,10 +18,29 @@
 	If not, see <http://www.gnu.org/licenses/>.
 =end
 
-require 'Qt'
-
+require 'log.rb'
 require 'character.rb'
+require 'build.rb'
+require 'character_skill.rb'
+require 'nero_skills.rb'
+
+require 'rubygems'
+require 'Qt4'
+
 require 'date'
+
+# If added to the list of tabs, this will automatically save to the passed file every time the tabs are all updated.
+class AutoSaver
+	def initialize(filename)
+		@filename = filename
+	end
+
+	def update
+		File.open(@filename,'w') { |f|
+			f.write($character.to_yaml)
+		}
+	end
+end
 
 class InfoWidget < Qt::Widget
 	def initialize(parent=nil)
@@ -153,19 +172,59 @@ class InfoWidget < Qt::Widget
 
 		death_banner = Qt::HBoxLayout.new(nil)
 		death_banner.addWidget(Qt::Label.new('White Stones:'))
-		@white_stones = Qt::Label.new('9')
+		@white_stones = Qt::Label.new('10')
 		death_banner.addWidget(@white_stones)
 		death_banner.addWidget(Qt::Label.new('Black Stones:'))
-		@black_stones = Qt::Label.new('1')
+		@black_stones = Qt::Label.new('0')
 		death_banner.addWidget(@black_stones)
 
 		deaths_layout.addLayout(death_banner,2,0,1,2)
 
 		@button_add_death = Qt::PushButton.new('Add Death')
 		@button_buy_back_death = Qt::PushButton.new('Buy Back Death')
+		@button_spirit_forge = Qt::PushButton.new('Spirit Forge')
+		@button_del_death = Qt::PushButton.new('Delete Last Entry')
+		@death_date = Qt::DateEdit.new(Qt::Date::currentDate(),self)
+		@death_date.displayFormat='yyyy/MM/dd'
+		@death_date.calendarPopup=true
+
+		@button_add_death.connect(SIGNAL(:clicked)) {
+			temp_date = Date.new(@death_date.date.year,@death_date.date.month,@death_date.date.day)
+			$character.death_history.add_death('Death',temp_date)
+			@black_stones.text = $character.death_history.black_stones.to_s
+			@white_stones.text = $character.death_history.white_stones.to_s
+			@death_history_box.text = $character.death_history.to_text
+		}
+
+		@button_buy_back_death.connect(SIGNAL(:clicked)) {
+			temp_date = Date.new(@death_date.date.year,@death_date.date.month,@death_date.date.day)
+			$character.death_history.add_death('Buyback',temp_date)
+			@black_stones.text = $character.death_history.black_stones.to_s
+			@white_stones.text = $character.death_history.white_stones.to_s
+			@death_history_box.text = $character.death_history.to_text
+		}
+
+		@button_spirit_forge.connect(SIGNAL(:clicked)) {
+			temp_date = Date.new(@death_date.date.year,@death_date.date.month,@death_date.date.day)
+			$character.death_history.add_death('Spirit Forge',temp_date)
+			@black_stones.text = $character.death_history.black_stones.to_s
+			@white_stones.text = $character.death_history.white_stones.to_s
+			@death_history_box.text = $character.death_history.to_text
+		}
+
+		@button_del_death.connect(SIGNAL(:clicked)) {
+			$character.death_history.delete_last_entry()
+			@black_stones.text = $character.death_history.black_stones.to_s
+			@white_stones.text = $character.death_history.white_stones.to_s
+			@death_history_box.text = $character.death_history.to_text
+		}
+
 
 		deaths_layout.addWidget(@button_add_death)
 		deaths_layout.addWidget(@button_buy_back_death)
+		deaths_layout.addWidget(@button_spirit_forge)
+		deaths_layout.addWidget(@death_date)
+		deaths_layout.addWidget(@button_del_death)
 
 		info_and_deaths_layout.addWidget(info_frame)
 		info_and_deaths_layout.addWidget(deaths_frame)
@@ -176,6 +235,8 @@ class InfoWidget < Qt::Widget
 
 		spirit_frame.frameShadow= Qt::Frame::Raised
 		spirit_frame.frameShape= Qt::Frame::StyledPanel
+		body_frame.frameShadow= Qt::Frame::Raised
+		body_frame.frameShape= Qt::Frame::StyledPanel
 
 		@spirit_layout = FormalMagicEffects.new(spirit_frame,'Spirit',school_completer)
 		@body_layout   = FormalMagicEffects.new(body_frame,'Body',school_completer)
@@ -185,6 +246,12 @@ class InfoWidget < Qt::Widget
 
 		base_layout.addLayout(info_and_deaths_layout)
 		base_layout.addLayout(formal_layout)
+	end
+
+	def startup
+		# Set the focus to the first field
+		# (setting it to the date created field is annoying)
+		@playername_entry.setFocus()
 	end
 
 	def commit
@@ -215,289 +282,13 @@ class InfoWidget < Qt::Widget
 
 		@spirit_layout.update()
 		@body_layout.update()
+
+		@black_stones.text = $character.death_history.black_stones.to_s
+		@white_stones.text = $character.death_history.white_stones.to_s
+		@death_history_box.text = $character.death_history.to_text
 	end
 end
 
-class FormalMagicEffects < Qt::GridLayout
-
-	def initialize(parent=nil,location='Spirit',school_completer=nil)
-		super(parent)
-		if school_completer == nil
-			school_completer = Qt::Completer.new(%w(Earth Celestial Nature))
-		end
-
-		restriction_completer = Qt::Completer.new(%w(Unrestricted Restricted Local\ Chapter\ Only LCO))
-		restriction_completer.completionMode= Qt::Completer::InlineCompletion
-
-		@location = location
-
-		@effects = (location == 'Spirit') ? $character.spirit_effects : $character.body_effects
-
-		@effect_widgets      = []
-		@expire_widgets      = []
-		@school_widgets      = []
-		@restriction_widgets = []
-
-		self.addWidget(Qt::Label.new("#{@location} Effects:"),
-		                        0,0,1,3)
-		
-		self.addWidget(Qt::Label.new('Effect Name'),1,0)
-		self.addWidget(Qt::Label.new('Expires'),1,1)
-		self.addWidget(Qt::Label.new('School'),1,2)
-		self.addWidget(Qt::Label.new('Restriction'),1,3)
-		(0..4).each do |i|
-			@effect_widgets << Qt::LineEdit.new('',nil)
-			self.addWidget(@effect_widgets[i],i+2,0)
-
-			@effect_widgets[i].connect(SIGNAL(:editingFinished)) {
-				self.effects.set_effect(i,@effect_widgets[i].text)
-			}
-
-			@expire_widgets << Qt::DateEdit.new(Qt::Date::currentDate(),parent)
-			@expire_widgets[i].displayFormat='yyyy/MM/dd'
-			@expire_widgets[i].calendarPopup=true
-			self.addWidget(@expire_widgets[i],i+2,1)
-
-			@expire_widgets[i].connect(SIGNAL(:editingFinished)) {
-				td = @expire_widgets[i].date
-				self.effects.set_expiration(i,Date.new(td.year,td.month,td.day))
-			}
-
-			@school_widgets << Qt::LineEdit.new('',nil)
-			@school_widgets[i].setCompleter(school_completer)
-			self.addWidget(@school_widgets[i],i+2,2)
-
-			@school_widgets[i].connect(SIGNAL(:editingFinished)) {
-				self.effects.set_school(i,@school_widgets[i].text)
-			}
-
-			@restriction_widgets << Qt::LineEdit.new('',nil)
-			@restriction_widgets[i].setCompleter(restriction_completer)
-			self.addWidget(@restriction_widgets[i],i+2,3)
-			
-			@restriction_widgets[i].connect(SIGNAL(:editingFinished)) {
-				self.effects.set_restriction(i,@restriction_widgets[i].text)
-			}
-		end
-	end
-
-	def effects
-		(@location == 'Spirit') ? $character.spirit_effects : $character.body_effects
-	end
-
-	def update
-		(0..4).each do |i|
-			@effect_widgets[i].text= self.effects.get_effect(i)
-			if self.effects.get_expiration(i).is_a? String
-				exp = self.effects.get_expiration(i).split '-'
-				date = Qt::Date.new exp[0].to_i, exp[1].to_i, exp[2].to_i
-			else
-				exp = self.effects.get_expiration(i)
-				date = Qt::Date.new exp.year, exp.month, exp.day
-			end
-			@expire_widgets[i].date= date
-			@school_widgets[i].text = self.effects.get_school i
-			@restriction_widgets[i].text = self.effects.get_restriction i
-		end
-	end
-end
-
-class SpellTreeLayout < Qt::GridLayout
-	def initialize(parent=nil,tree_type='Primary',base_cost=1)
-		super(parent)
-
-		@base_cost = base_cost
-
-		@tree_type = tree_type
-
-		self.setAlignment Qt::AlignHCenter
-		self.addWidget(Qt::Label.new("#{@tree_type} Spell Tree"),0,0,1,11)
-		@tree = []
-		@plus = []
-		@minus = []
-		(0..8).each do |i|
-			@tree[i] = Qt::LineEdit.new('0',nil)
-			@tree[i].setMaximumWidth(30)
-			@tree[i].setMaxLength(2)
-			@tree[i].setAlignment Qt::AlignHCenter
-			@tree[i].readOnly = true
-			@tree[i].toolTip = "Cost: #{@base_cost * spell_cost(i)}"
-			self.addWidget(@tree[i],1,i+(i/3),Qt::AlignCenter)
-
-			@plus[i] = Qt::PushButton.new('+',nil)
-			@plus[i].setMinimumWidth(10)
-			@plus[i].setMinimumHeight(10)
-			@plus[i].setMaximumWidth(20)
-			@plus[i].setMaximumHeight(20)
-
-			@minus[i] = Qt::PushButton.new('-',nil)
-			@minus[i].setMinimumWidth(10)
-			@minus[i].setMinimumHeight(10)
-			@minus[i].setMaximumWidth(20)
-			@minus[i].setMaximumHeight(20)
-
-			@plus[i].connect(SIGNAL(:clicked)) { self.increment i }
-			@minus[i].connect(SIGNAL(:clicked)) { self.decrement i }
-
-			mod_tree_layout = Qt::HBoxLayout.new(nil)
-			mod_tree_layout.spacing=0
-			mod_tree_layout.addWidget(@minus[i])
-			mod_tree_layout.addWidget(@plus[i])
-
-			self.addLayout(mod_tree_layout,2,i+(i/3))
-		end
-		[3,7].each do |i|
-			self.addWidget(Qt::Label.new('/',nil),1,i,Qt::AlignCenter)
-		end
-	end
-
-
-private
-	def spells_at i
-		return @tree[i].text.to_i
-	end
-
-	def set_spells_at i, val
-		return if val < 0
-		@tree[i].text= val.to_s
-	end
-
-	def enforce_legality static
-		# First traverse down in number:
-		(static - 1).downto(0) do |i|
-		#(0 .. (static - 1)).each do |j|
-      #i = (static - 1) - j
-			# turning 44 into 45 -> 55
-			if spells_at(i) < spells_at(i+1)
-				set_spells_at(i, spells_at(i+1))
-			end
-			if spells_at(i) < 4 and spells_at(i) == spells_at(i+1)
-				set_spells_at(i, spells_at(i)+1)
-			end
-			if spells_at(i) <= 4 and spells_at(i) > spells_at(i+1)+2
-				set_spells_at(i, spells_at(i)-1)
-			end
-			if spells_at(i) > 4 and spells_at(i) > spells_at(i+1)+1
-				set_spells_at(i, spells_at(i)-1)
-			end
-		end
-		(static + 1).upto(8) do |i|
-			if spells_at(i-1) < spells_at(i)
-				set_spells_at(i, spells_at(i-1))
-			end
-			if spells_at(i-1) < 4 and spells_at(i-1) == spells_at(i)
-				set_spells_at(i, spells_at(i)-1)
-			end
-			if spells_at(i-1) <= 4 and spells_at(i-1) > spells_at(i) + 2
-				set_spells_at(i, spells_at(i-1)-2)
-			end
-			if spells_at(i-1) > 4 and spells_at(i-1) > spells_at(i) + 1
-				set_spells_at(i,spells_at(i-1)-1)
-			end
-		end
-
-	end
-
-public
-	def increment i
-		if self.can_add_spells()
-			set_spells_at(i, spells_at(i) + 1)
-			enforce_legality(i)
-			enforce_legality(i)
-			self.commit()
-		else
-			err = Qt::MessageBox.new(nil,'Error Adding Spell','Cannot add spell: Missing some prerequisite.')
-			err.show()
-		end
-	end
-
-	def decrement i
-		set_spells_at(i, spells_at(i) - 1)
-		enforce_legality(i)
-		self.commit()
-	end
-
-public
-	def update
-		#puts "Updating #{@tree_type}:#{self.school} tree"
-		@tree.each_with_index do |t,i|
-			val = $character.build.spell_at(self.school, i+1)
-			t.text = val
-			#puts "Setting #{self.school}:#{i+1} to #{val}" if @tree_type == 'Primary'
-		end
-
-
-		self.change_class
-	end
-
-	def school
-		if @tree_type == 'Primary'
-			return $character.primary
-		else
-			return $character.secondary
-		end
-	end
-
-	def commit
-		school = self.school()
-		$character.build.set_tree school, self.tree
-		$tabs.each do |tab|
-			tab.update
-		end
-	end
-
-	def tree
-		result = []
-		(0..8).each { |i| result << spells_at(i) }
-		return result
-	end
-
-	def change_class
-		(0..8).each do |i|
-			@tree[i].toolTip = "Cost: #{@base_cost * spell_cost(i)}"
-		end
-	end
-
-	# Returns the cost of the tree: assumes primary
-	# Basically this is meant to be added to the build total
-	# if this is a secondary tree
-	def tree_cost
-		cost = 0
-		(0..8).each do |i|
-			cost += self.spell_cost(i)*@tree[i]
-		end
-		return cost
-	end
-
-	# Returns true if the character has the proper skills needed
-	# to add spells.
-	def can_add_spells
-		skill = $nero_skills.lookup( "#{self.school()} 1" )
-		cskill= Character_Skill.new(skill, {}, 1, $character)
-
-		return cskill.meets_prerequisites?
-	end
-
-	
-	def spell_cost i
-		case $character.character_class.name
-		when 'Scholar'
-			return scholar_cost(i)
-		when 'Templar'
-			return (i * 2/3) + 1
-		when 'Fighter'
-			return scholar_cost(i)*3
-		when 'Rogue'
-			return 2 * scholar_cost(i)
-		else
-			return scholar_cost(i)
-		end
-	end
-
-	def scholar_cost i
-		return (i * 1/2) + 1
-	end
-end
 
 class SkillsWidget < Qt::ScrollArea
 	def initialize(build_widget,parent=nil)
@@ -518,19 +309,28 @@ class SkillsWidget < Qt::ScrollArea
 			if skill.skill.limit != 1
 				skill_count_frame = Qt::Frame.new(self)
 				skill_count_layout = Qt::GridLayout.new(skill_count_frame)
-	
+
 				skill_count_label = Qt::Label.new("#{skill.count.to_s}X",nil)
 				skill_count_layout.addWidget(skill_count_label,0,0,1,2)
-	
+
 				skill_count_dec = Qt::PushButton.new('-',nil)
 				skill_count_dec.setMinimumWidth(5)
 				skill_count_dec.setMinimumHeight(5)
 				skill_count_dec.setMaximumWidth(10)
 				skill_count_dec.setMaximumHeight(10)
-				
+
 				skill_count_dec.connect(SIGNAL(:clicked)) {
-					$character.build.legally_delete_skill skill.name, skill.options
-					self.commit
+					domino = $character.build.legally_delete_skill skill.name, skill.options
+
+					$log.debug "Domino: #{domino}"
+
+					if domino or ($character.build.count(skill.name, skill.options) <= 0)
+						self.commit
+					else
+						skill_count_label.text = "#{skill.count.to_s}X"
+						skill_cost_label.text = skill.cost().to_s
+						@build_widget.update_banner()
+					end
 				}
 
 				skill_count_inc = Qt::PushButton.new('+',nil)
@@ -544,15 +344,13 @@ class SkillsWidget < Qt::ScrollArea
 					skill_count_label.text = "#{skill.count.to_s}X"
 					skill_cost_label.text = skill.cost().to_s
 					@build_widget.update_banner
-					#self.commit
 				}
 
 				skill_count_layout.addWidget(skill_count_dec,1,0)
 				skill_count_layout.addWidget(skill_count_inc,1,1)
 
 				@grid.addWidget(skill_count_frame,i,0)
-			end
-			if skill.skill.limit == 1
+			else
 				remove_skill_button = Qt::PushButton.new('X',nil)
 				remove_skill_button.connect(SIGNAL(:clicked)) {
 					$character.build.legally_delete_skill skill.name, skill.options
@@ -628,26 +426,29 @@ class BuildWidget < Qt::Widget
 		skill_layout = Qt::GridLayout.new(skill_frame)
 		skill_layout.addWidget(Qt::Label.new('Learn a new Skill:',nil),0,0,1,3)
 
-		@skill_entry = Qt::LineEdit.new(nil)
-		skill_list = build_skill_list()
-		skill_completer = Qt::Completer.new(skill_list,nil)
-		skill_completer.completionMode= Qt::Completer::UnfilteredPopupCompletion
-
-		@skill_entry.setCompleter(skill_completer)
-
+		#@skill_entry = Qt::LineEdit.new(nil)
+		@skill_entry = Qt::ComboBox.new(nil)
+		skill_list = self.build_skill_list()
+		$log.info "Skill list length: #{skill_list.length}"
+		
+		#skill_completer = Qt::Completer.new(skill_list,nil)
+		#skill_completer.completionMode= Qt::Completer::UnfilteredPopupCompletion
+		#@skill_entry.setCompleter(skill_completer)
+		@skill_entry.add_items skill_list
+		
 		skill_layout.addWidget(@skill_entry, 1,0,1,2)
 		skill_layout.addWidget(Qt::Label.new('Note',nil),2,0)
 		@skill_options_entry = Qt::LineEdit.new(nil)
 		skill_layout.addWidget(@skill_options_entry,2,1)
 		skill_entry_button = Qt::PushButton.new('Add',nil)
-		@skill_entry.connect(SIGNAL(:returnPressed)) {
-			self.add_entered_skill()
-		}
+		#@skill_entry.connect(SIGNAL(:returnPressed)) {
+			#self.add_entered_skill()
+		#}
 		@skill_options_entry.connect(SIGNAL(:returnPressed)) {
-			self.add_entered_skill()
+			self.add_entered_skill_combo()
 		}
 		skill_entry_button.connect(SIGNAL(:clicked)) {
-			self.add_entered_skill()
+			self.add_entered_skill_combo()
 		}
 		skill_layout.addWidget(skill_entry_button, 1,2,2,1)
 
@@ -691,17 +492,33 @@ class BuildWidget < Qt::Widget
 			@skill_options_entry.text = ''
 			@skill_entry.setFocus()
 		end
-		self.commit
+		self.commit()
+	end
+
+	def add_entered_skill_combo
+		if !$character.build.add_skill @skill_entry.current_text, @skill_options_entry.text
+			err = Qt::MessageBox.new(nil,'Error Adding Skill','Cannot add skill.')
+			err.show()
+		else
+			@skill_entry.current_index = 0
+			@skill_options_entry.text = ''
+			@skill_entry.setFocus()
+		end
+		self.commit()
 	end
 
 	def build_skill_list()
-		skills = []
-		File.open( 'skills' ) { |file|
-			while line = file.gets
-				skills << line.strip
-			end
-		}
-		return skills
+		skill_list = ['']
+		begin
+			File.open( $data_path + 'skills' ) { |file|
+				while line = file.gets
+					skill_list << line.strip
+				end
+			}
+		rescue
+			$log.error "Skill autocompletion file not found!  Cannot build skill list!"
+		end
+		return skill_list
 	end
 
 	def commit
@@ -908,7 +725,7 @@ class BackstoryWidget < Qt::Widget
 		@layout = Qt::VBoxLayout.new(self)
 
 		@backstory_text = Qt::TextEdit.new(self)
-		@backstory_text.acceptRichText = true
+		@backstory_text.acceptRichText = false
 		@backstory_text.tabChangesFocus = true
 		@backstory_text.tabStopWidth = 20
 		@backstory_text.text= ''
@@ -926,7 +743,7 @@ class BackstoryWidget < Qt::Widget
 end
 
 class BaseWidget < Qt::Widget
-	slots 'open()','save()','new()','save_as()','menu_exit()'
+	slots 'open()','save()','new()','save_as()','menu_exit()','export()','revert()'
 	def initialize(parent=nil)
 		super(parent)
 
@@ -937,6 +754,15 @@ class BaseWidget < Qt::Widget
 		@menubar = Qt::MenuBar.new(self)
 		@file_menu = Qt::Menu.new('&File')
 
+		action_new = Qt::Action.new('&New',self)
+		@file_menu.addAction(action_new)
+		action_new.connect(SIGNAL(:triggered)) {
+			self.new()
+		}
+		#connect(action_new, SIGNAL('triggered()'),
+				  #self, SLOT('new()'))
+		action_new.shortcut = Qt::KeySequence.new("Ctrl+N")
+
 		action_open = Qt::Action.new('&Open',self)
 		@file_menu.addAction(action_open)
 		#connect(action_open, SIGNAL('triggered()'),
@@ -946,28 +772,48 @@ class BaseWidget < Qt::Widget
 		}
 		action_open.shortcut = Qt::KeySequence.new("Ctrl+O")
 
+		action_revert = Qt::Action.new('Reload from Disk', self)
+		@file_menu.addAction(action_revert)
+		action_revert.connect(SIGNAL(:triggered)) {
+			self.revert()
+		}
+
 		action_save = Qt::Action.new('&Save',self)
 		@file_menu.addAction(action_save)
-		connect(action_save, SIGNAL('triggered()'),
-				  self, SLOT('save()'))
+		action_save.connect(SIGNAL(:triggered)) {
+			self.save()
+		}
+		#connect(action_save, SIGNAL('triggered()'),
+				  #self, SLOT('save()'))
 		action_save.shortcut = Qt::KeySequence.new("Ctrl+S")
-
-		action_new = Qt::Action.new('&New',self)
-		@file_menu.addAction(action_new)
-		connect(action_new, SIGNAL('triggered()'),
-				  self, SLOT('new()'))
-		action_new.shortcut = Qt::KeySequence.new("Ctrl+N")
 
 		action_save_as = Qt::Action.new('Save &As',self)
 		@file_menu.addAction(action_save_as)
-		connect(action_save_as, SIGNAL('triggered()'),
-				  self, SLOT('save_as()'))
+		action_save_as.connect(SIGNAL(:triggered)) {
+			self.save_as()
+		}
+		#connect(action_save_as, SIGNAL('triggered()'),
+				  #self, SLOT('save_as()'))
 		action_save_as.shortcut = Qt::KeySequence.new("Ctrl+Shift+S")
+
+		if File.exists?($data_path + 'chapter.ini')
+			action_export = Qt::Action.new('&Export as HTML to Desktop',self)
+			@file_menu.addAction(action_export)
+			action_export.connect(SIGNAL(:triggered)) {
+				self.export()
+			}
+			#connect(action_export, SIGNAL('triggered()'),
+					  #self, SLOT('export()'))
+		end
+
 
 		action_exit = Qt::Action.new('E&xit',self)
 		@file_menu.addAction(action_exit)
-		connect(action_exit, SIGNAL('triggered()'),
-				  self, SLOT('menu_exit()'))
+		action_exit.connect(SIGNAL(:triggered)) {
+			self.menu_exit()
+		}
+		#connect(action_exit, SIGNAL('triggered()'),
+				  #self, SLOT('menu_exit()'))
 
 		#Experience Menu
 		@exp_menu = Qt::Menu.new('&Experience')
@@ -976,6 +822,7 @@ class BaseWidget < Qt::Widget
 		action_set_loose = Qt::Action.new('Set Loose Experience',self)
 		action_set_level = Qt::Action.new('Set &Level',self)
 		action_exp_undo = Qt::Action.new('&Undo',self)
+		action_exp_undo.shortcut = Qt::KeySequence.new("Ctrl+Z")
 		action_set_exp.connect(SIGNAL(:triggered)) {
 			val = Qt::InputDialog::getInteger(nil,'Set Experience','Experience',$character.experience.experience,0,999999999)
 			if val != nil
@@ -1030,27 +877,66 @@ class BaseWidget < Qt::Widget
 
 		@layout.addWidget(@tabbar)
 
+		$tabs[0].startup()
+
 		self.new()
+
+		if File.exists? 'ncc.yml'
+			$character.load 'ncc.yml'
+			$tabs.each do |tab|
+				tab.update
+			end
+		end
+		$tabs << AutoSaver.new('ncc.yml')
 	end
 
 	# Saves the file over the file most recently saved or opened
 	def save()
+		$log.debug "Saving"
 		return self.save_as(@file)
+	end
+
+	def export(file=nil)
+		$log.debug "Exporting"
+		file = "#{ENV['USERPROFILE']}/Desktop/Tempsheet - #{$character.player_name} (#{$character.name}).html"
+		$log.debug "Exporting #{file}"
+		begin
+			File.open(file,'w') { |f|
+				unless $character.to_html.empty?
+					f.write($character.to_html)
+				else
+					$log.debug "export() Character did not generate HTML!"
+				end
+			}
+		rescue
+			$log.error "Could not export to file #{file}"
+			# TODO: Give the user an error message
+		end
 	end
 
 	# Save the current character into the passed file
 	# If no file is passed, open a dialog to get the file
 	def save_as( file = nil )
+		$log.debug "Saving As"
 		if file == nil
 			Qt::FileDialog.new do |fd|
 				file = fd.get_save_file_name()
 			end
 		end
-		return unless file
+		unless file
+			$log.warn "Save As: No filename provided..."
+			return
+		end
 		@file = file
-		File.open(@file,'w') { |f|
-			f.write($character.to_s)
-		}
+
+		begin
+			File.open(@file,'w') { |f|
+				f.write($character.to_s)
+			}
+		rescue
+			$log.error "Could not save to file #{@file}"
+			# TODO: Give the user an error message
+		end
 	end
 
 	# Reset the character
@@ -1062,20 +948,39 @@ class BaseWidget < Qt::Widget
 		end
 	end
 
+	# Revert to the version of the current file that is on disk
+	def revert()
+		$log.info "Reverting"
+		begin
+			return unless @file
+			unless $character.load @file
+				$log.error "Failed to revert to file: #{@file}"
+			end
+			$tabs.each do |tab|
+				tab.update
+			end
+		rescue
+			$log.error "Failed to revert..."
+		end
+	end
+
 	# Open a file dialog
 	# open that file
 	# set @file to that file
 	def open()
-		puts "Open"
+		$log.info "Opening"
 		file = nil
-		Qt::FileDialog.new do |fd|
-			file = fd.get_open_file_name()
+		Qt::FileDialog.new() do |fd|
+			file = fd.get_open_file_name
 		end
-		puts "'#{file}'"
 		return unless file
+		$log.debug "Opening '#{file}'"
 		@file = file
 
-		$character.load file
+		unless $character.load @file
+			$log.error "Failed to load character from #{file}"
+			#TODO: Raise an error message for them
+		end
 		$tabs.each do |tab|
 			tab.update
 		end
@@ -1094,11 +999,298 @@ class BaseWidget < Qt::Widget
 	end
 end
 
+class FormalMagicEffects < Qt::GridLayout
+
+	def initialize(parent=nil,location='Spirit',school_completer=nil)
+		super(parent)
+		if school_completer == nil
+			school_completer = Qt::Completer.new(%w(Earth Celestial Nature))
+		end
+
+		restriction_completer = Qt::Completer.new(%w(Unrestricted Restricted Local\ Chapter\ Only LCO))
+		restriction_completer.completionMode= Qt::Completer::InlineCompletion
+
+		@location = location
+
+		@effects = (location == 'Spirit') ? $character.spirit_effects : $character.body_effects
+
+		@effect_widgets      = []
+		@expire_widgets      = []
+		@school_widgets      = []
+		@restriction_widgets = []
+
+		self.addWidget(Qt::Label.new("#{@location} Effects:"),
+		                        0,0,1,3)
+		
+		self.addWidget(Qt::Label.new('Effect Name'),1,0)
+		self.addWidget(Qt::Label.new('Expires'),1,1)
+		self.addWidget(Qt::Label.new('School'),1,2)
+		self.addWidget(Qt::Label.new('Restriction'),1,3)
+		(0..4).each do |i|
+			@effect_widgets << Qt::LineEdit.new('',nil)
+			self.addWidget(@effect_widgets[i],i+2,0)
+
+			@effect_widgets[i].connect(SIGNAL(:editingFinished)) {
+				self.effects.set_effect(i,@effect_widgets[i].text)
+			}
+
+			@expire_widgets << Qt::DateEdit.new(Qt::Date::currentDate(),parent)
+			@expire_widgets[i].displayFormat='yyyy/MM/dd'
+			@expire_widgets[i].calendarPopup=true
+			self.addWidget(@expire_widgets[i],i+2,1)
+
+			@expire_widgets[i].connect(SIGNAL(:editingFinished)) {
+				td = @expire_widgets[i].date
+				self.effects.set_expiration(i,Date.new(td.year,td.month,td.day))
+			}
+
+			@school_widgets << Qt::LineEdit.new('',nil)
+			@school_widgets[i].setCompleter(school_completer)
+			self.addWidget(@school_widgets[i],i+2,2)
+
+			@school_widgets[i].connect(SIGNAL(:editingFinished)) {
+				self.effects.set_school(i,@school_widgets[i].text)
+			}
+
+			@restriction_widgets << Qt::LineEdit.new('',nil)
+			@restriction_widgets[i].setCompleter(restriction_completer)
+			self.addWidget(@restriction_widgets[i],i+2,3)
+			
+			@restriction_widgets[i].connect(SIGNAL(:editingFinished)) {
+				self.effects.set_restriction(i,@restriction_widgets[i].text)
+			}
+		end
+	end
+
+	def effects
+		(@location == 'Spirit') ? $character.spirit_effects : $character.body_effects
+	end
+
+	def update
+		(0..4).each do |i|
+			@effect_widgets[i].text= self.effects.get_effect(i)
+			if self.effects.get_expiration(i).is_a? String
+				exp = self.effects.get_expiration(i).split '-'
+				date = Qt::Date.new exp[0].to_i, exp[1].to_i, exp[2].to_i
+			else
+				exp = self.effects.get_expiration(i)
+				date = Qt::Date.new exp.year, exp.month, exp.day
+			end
+			@expire_widgets[i].date= date
+			@school_widgets[i].text = self.effects.get_school i
+			@restriction_widgets[i].text = self.effects.get_restriction i
+		end
+	end
+end
+
+class SpellTreeLayout < Qt::GridLayout
+	def initialize(parent=nil,tree_type='Primary',base_cost=1)
+		super(parent)
+
+		@base_cost = base_cost
+
+		@tree_type = tree_type
+
+		self.setAlignment Qt::AlignHCenter
+		self.addWidget(Qt::Label.new("#{@tree_type} Spell Tree"),0,0,1,11)
+		@tree = []
+		@plus = []
+		@minus = []
+		(0..8).each do |i|
+			@tree[i] = Qt::LineEdit.new('0',nil)
+			@tree[i].setMaximumWidth(30)
+			@tree[i].setMaxLength(2)
+			@tree[i].setAlignment Qt::AlignHCenter
+			@tree[i].readOnly = true
+			@tree[i].toolTip = "Cost: #{@base_cost * spell_cost(i)}"
+			self.addWidget(@tree[i],1,i+(i/3),Qt::AlignCenter)
+
+			@plus[i] = Qt::PushButton.new('+',nil)
+			@plus[i].setMinimumWidth(10)
+			@plus[i].setMinimumHeight(10)
+			@plus[i].setMaximumWidth(20)
+			@plus[i].setMaximumHeight(20)
+
+			@minus[i] = Qt::PushButton.new('-',nil)
+			@minus[i].setMinimumWidth(10)
+			@minus[i].setMinimumHeight(10)
+			@minus[i].setMaximumWidth(20)
+			@minus[i].setMaximumHeight(20)
+
+			@plus[i].connect(SIGNAL(:clicked)) { self.increment i }
+			@minus[i].connect(SIGNAL(:clicked)) { self.decrement i }
+
+			mod_tree_layout = Qt::HBoxLayout.new(nil)
+			mod_tree_layout.spacing=0
+			mod_tree_layout.addWidget(@minus[i])
+			mod_tree_layout.addWidget(@plus[i])
+
+			self.addLayout(mod_tree_layout,2,i+(i/3))
+		end
+		[3,7].each do |i|
+			self.addWidget(Qt::Label.new('/',nil),1,i,Qt::AlignCenter)
+		end
+	end
+
+
+private
+	def spells_at i
+		return @tree[i].text.to_i
+	end
+
+	def set_spells_at i, val
+		return if val < 0
+		@tree[i].text= val.to_s
+	end
+
+	def enforce_legality static
+		# First traverse down in number:
+		(static - 1).downto(0) do |i|
+		#(0 .. (static - 1)).each do |j|
+      #i = (static - 1) - j
+			# turning 44 into 45 -> 55
+			if spells_at(i) < spells_at(i+1)
+				set_spells_at(i, spells_at(i+1))
+			end
+			if spells_at(i) < 4 and spells_at(i) == spells_at(i+1)
+				set_spells_at(i, spells_at(i)+1)
+			end
+			if spells_at(i) <= 4 and spells_at(i) > spells_at(i+1)+2
+				set_spells_at(i, spells_at(i)-1)
+			end
+			if spells_at(i) > 4 and spells_at(i) > spells_at(i+1)+1
+				set_spells_at(i, spells_at(i)-1)
+			end
+		end
+		(static + 1).upto(8) do |i|
+			if spells_at(i-1) < spells_at(i)
+				set_spells_at(i, spells_at(i-1))
+			end
+			if spells_at(i-1) < 4 and spells_at(i-1) == spells_at(i)
+				set_spells_at(i, spells_at(i)-1)
+			end
+			if spells_at(i-1) <= 4 and spells_at(i-1) > spells_at(i) + 2
+				set_spells_at(i, spells_at(i-1)-2)
+			end
+			if spells_at(i-1) > 4 and spells_at(i-1) > spells_at(i) + 1
+				set_spells_at(i,spells_at(i-1)-1)
+			end
+		end
+
+	end
+
+public
+	def increment i
+		if self.can_add_spells()
+			set_spells_at(i, spells_at(i) + 1)
+			enforce_legality(i)
+			enforce_legality(i)
+			self.commit()
+		else
+			err = Qt::MessageBox.new(nil,'Error Adding Spell','Cannot add spell: Missing some prerequisite.')
+			err.show()
+		end
+	end
+
+	def decrement i
+		set_spells_at(i, spells_at(i) - 1)
+		enforce_legality(i)
+		self.commit()
+	end
+
+public
+	def update
+		$log.info "Updating #{@tree_type}:#{self.school} tree"
+		@tree.each_with_index do |t,i|
+			val = $character.build.spell_at(self.school, i+1)
+			t.text = val
+			$log.debug "Setting #{self.school}:#{i+1} to #{val}" if @tree_type == 'Primary'
+		end
+
+
+		self.change_class
+	end
+
+	def school
+		if @tree_type == 'Primary'
+			return $character.primary
+		else
+			return $character.secondary
+		end
+	end
+
+	def commit
+		school = self.school()
+		$character.build.set_tree school, self.tree
+		$tabs.each do |tab|
+			tab.update
+		end
+	end
+
+	def tree
+		result = []
+		(0..8).each { |i| result << spells_at(i) }
+		return result
+	end
+
+	def change_class
+		(0..8).each do |i|
+			@tree[i].toolTip = "Cost: #{@base_cost * spell_cost(i)}"
+		end
+	end
+
+	# Returns the cost of the tree: assumes primary
+	# Basically this is meant to be added to the build total
+	# if this is a secondary tree
+	def tree_cost
+		cost = 0
+		(0..8).each do |i|
+			cost += self.spell_cost(i)*@tree[i]
+		end
+		return cost
+	end
+
+	# Returns true if the character has the proper skills needed
+	# to add spells.
+	def can_add_spells
+		skill = $nero_skills.lookup( "#{self.school()} 1" )
+		cskill= Character_Skill.new(skill, {}, 1, $character)
+
+		return cskill.meets_prerequisites?
+	end
+
+	
+	def spell_cost i
+		case $character.character_class.name
+		when 'Scholar'
+			return scholar_cost(i)
+		when 'Templar'
+			return (i * 2/3) + 1
+		when 'Fighter'
+			return scholar_cost(i)*3
+		when 'Rogue'
+			return 2 * scholar_cost(i)
+		else
+			return scholar_cost(i)
+		end
+	end
+
+	def scholar_cost i
+		return (i * 1/2) + 1
+	end
+end
+
 # Run the application
 if __FILE__ == $0
+	$data_path = "#{Dir.pwd()}/"
+	begin
+		Dir.chdir(ENV['USERPROFILE'] + "/My Documents/NERO Character Tracker")
+	rescue
+		$log.error "Could not change directory to 'My Documents/NERO Character Tracker'"
+	end
 	$nero_skills = NERO_Skills.new()
 	$character = NERO_Character.new()
-	puts "Starting Corvec's Cool, Creative Character Creator"
+	$log.info "Starting Corvec's Cool, Creative Character Creator"
 	app = Qt::Application.new(ARGV)
 	my_widget = BaseWidget.new()
 	my_widget.show()

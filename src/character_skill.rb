@@ -24,7 +24,7 @@ class Character_Skill
 		@skill = nero_skill
 		@options = options
 		amount = amount.to_i
-		#puts "New Character Skill: #{amount}x #{nero_skill.name} (#{options})"
+		$log.debug "New Character Skill: #{amount}x #{nero_skill.name} (#{options})"
 		if amount.is_a? Integer
 			@count = nero_skill.apply_limit(amount)
 		else
@@ -32,7 +32,7 @@ class Character_Skill
 		end
 		#Debug message:
 		if @count != amount.to_i
-			puts "Character_Skill.new(): Limited amount to #{@count}"
+			$log.warn "Character_Skill.new(): Limited amount to #{@count}"
 		end
 		@character = character
 	end
@@ -151,7 +151,7 @@ class Character_Skill
 		end
 
 		prereq = prereq.to_s
-		#puts "Character_Skill(#{@skill.name}).fulfills_prereq(#{prereq})"
+		$log.debug "Character_Skill(#{@skill.name}).fulfills_prereq(#{prereq})"
 
 		if @skill.name == prereq
 			return check_prereq_count(count)
@@ -177,10 +177,10 @@ class Character_Skill
 
 	def check_prereq_count count
 		if @count >= count
-			#puts "Character_Skill(#{@skill.name}).check_prereq_count() : returning true"
+			$log.debug "Character_Skill(#{@skill.name}).check_prereq_count() : returning true"
 			return true
 		end
-		puts "Character_Skill(#{@skill.name}).check_prereq_count() : returning #{count - @count}"
+		$log.info "Character_Skill(#{@skill.name}).check_prereq_count() : returning #{count - @count}"
 		return count - @count
 	end
 
@@ -189,7 +189,7 @@ class Character_Skill
 	# This also checks to ensure that skills such as Slays
 	# are at a legal total amount, given the amount of proficiencies
 	def meets_prerequisites? build = nil, my_count = @count
-		#puts "Character_Skill(#{@skill.name}).meets_prerequisites?(): prereqs = #{@skill.prereqs}"
+		$log.debug "Character_Skill(#{@skill.name}).meets_prerequisites?(): prereqs = #{@skill.prereqs}"
 		if @skill.prereqs == nil
 			return true
 		end
@@ -202,9 +202,9 @@ class Character_Skill
 		end
 		if @skill.prereqs.is_a? Array
 			@skill.prereqs.each do |prereq|
-				#puts "Character_Skill(#{@skill.name}).meets_prerequisites?(): prereq = #{prereq}"
+				$log.debug "Character_Skill(#{@skill.name}).meets_prerequisites?(): prereq = #{prereq}"
 				if !self.meets_prereq?(build, prereq)
-					puts "Character_Skill(#{@skill.name}).meets_prerequisites?() Prereq #{prereq} not met..."
+					$log.info "Character_Skill(#{@skill.name}).meets_prerequisites?() Prereq #{prereq} not met..."
 					return false
 				end
 			end
@@ -242,13 +242,13 @@ class Character_Skill
 	end
 
 	def meets_prereq? build, prereq
-		#puts "Character_Skill(#{@skill.name}).meets_prereq?(#{prereq})"
+		$log.debug "Character_Skill(#{@skill.name}).meets_prereq?(#{prereq})"
 		found = false
 		if prereq.match /\w* \d/
 			return build.spell(prereq) > 0
 		end
 		build.skills.each do |check|
-			#puts "Character_Skill(#{@skill.name}).meets_prereq?(#{prereq}): Checking #{check.skill.name}"
+			$log.debug "Character_Skill(#{@skill.name}).meets_prereq?(#{prereq}): Checking #{check.skill.name}"
 			if check.is_a?(Character_Skill) and check.fulfills_prereq?(prereq)
 				found = true
 				break
@@ -259,6 +259,15 @@ class Character_Skill
 		end
 		return true
 	end
+
+end
+
+
+if __FILE__ == $0
+	$log = Logger.new('build.log',20,102400)
+
+	$log.info "Testing character_skill.rb"
+	$log.warn "Nothing to test!"
 
 end
 
