@@ -688,7 +688,7 @@ class Death_History
 				deaths -= 1
 			end
 		end
-		return [0,deaths-2].min
+		return [0,deaths-2].max
 	end
 
 	def spirit_forges

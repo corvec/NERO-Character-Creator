@@ -18,6 +18,8 @@
 	If not, see <http://www.gnu.org/licenses/>.
 =end
 
+$LOAD_PATH << './src'
+
 require 'log.rb'
 require 'character.rb'
 require 'build.rb'
@@ -1284,9 +1286,9 @@ end
 if __FILE__ == $0
 	$data_path = "#{Dir.pwd()}/"
 	begin
-		Dir.chdir(ENV['USERPROFILE'] + "/My Documents/NERO Character Tracker")
+		Dir.chdir(ENV['USERPROFILE'] + "/My Documents")
 	rescue
-		$log.error "Could not change directory to 'My Documents/NERO Character Tracker'"
+		$log.error "Could not change directory to 'My Documents'"
 	end
 	$nero_skills = NERO_Skills.new()
 	$character = NERO_Character.new()
