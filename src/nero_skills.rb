@@ -89,7 +89,7 @@ class NERO_Skill
 
 		@prereqs = []
 		@includes = []
-		@options = {}
+		@options = []
 		@limit = 1
 		@scholarly = false
 

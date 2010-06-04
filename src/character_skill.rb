@@ -37,16 +37,22 @@ class Character_Skill
 		@character = character
 	end
 
+	# Set the number of this skill to the passed amount.
 	def count= amount
 		if amount.to_i > 0
 			@count = @skill.apply_limit(amount)
 		end
 	end
 
+	# Returns the name of this skill
 	def name
 		return @skill.name
 	end
 
+
+	# Returns true if the character can legally have this skill,
+	# given racial prohibitions but not account for prerequisites
+	# or build.
 	def legal? class_name = nil, race = nil
 		if @character != nil
 			class_name = @character.character_class.to_s if class_name == nil

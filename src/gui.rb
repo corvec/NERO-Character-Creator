@@ -316,10 +316,10 @@ class SkillsWidget < Qt::ScrollArea
 				skill_count_layout.addWidget(skill_count_label,0,0,1,2)
 
 				skill_count_dec = Qt::PushButton.new('-',nil)
-				skill_count_dec.setMinimumWidth(5)
-				skill_count_dec.setMinimumHeight(5)
-				skill_count_dec.setMaximumWidth(10)
-				skill_count_dec.setMaximumHeight(10)
+				skill_count_dec.setMinimumWidth(10)
+				skill_count_dec.setMinimumHeight(10)
+				skill_count_dec.setMaximumWidth(20)
+				skill_count_dec.setMaximumHeight(20)
 
 				skill_count_dec.connect(SIGNAL(:clicked)) {
 					domino = $character.build.legally_delete_skill skill.name, skill.options
@@ -336,10 +336,10 @@ class SkillsWidget < Qt::ScrollArea
 				}
 
 				skill_count_inc = Qt::PushButton.new('+',nil)
-				skill_count_inc.setMinimumWidth(5)
-				skill_count_inc.setMinimumHeight(5)
-				skill_count_inc.setMaximumWidth(10)
-				skill_count_inc.setMaximumHeight(10)
+				skill_count_inc.setMinimumWidth(10)
+				skill_count_inc.setMinimumHeight(10)
+				skill_count_inc.setMaximumWidth(20)
+				skill_count_inc.setMaximumHeight(20)
 
 				skill_count_inc.connect(SIGNAL(:clicked)) {
 					$character.build.add_skill(skill.skill,skill.options)
@@ -368,7 +368,7 @@ class SkillsWidget < Qt::ScrollArea
 				j = 0
 				skill.options.each do |o,v|
 					options_grid.addWidget(Qt::Label.new("#{o}:"),j,0)
-					options_grid.addWidget(Qt::Label.new("#{v}:"),j,1)
+					options_grid.addWidget(Qt::Label.new("#{v}"),j,1)
 					j += 1
 				end
 
@@ -487,7 +487,7 @@ class BuildWidget < Qt::Widget
 
 	def add_entered_skill
 		if !$character.build.add_skill @skill_entry.text, @skill_options_entry.text
-			err = Qt::MessageBox.new(nil,'Error Adding Skill','Cannot add skill.')
+			err = Qt::MessageBox.new(nil,'Error Adding Skill',$character.build.get_add_error())
 			err.show()
 		else
 			@skill_entry.text = ''
@@ -499,7 +499,7 @@ class BuildWidget < Qt::Widget
 
 	def add_entered_skill_combo
 		if !$character.build.add_skill @skill_entry.current_text, @skill_options_entry.text
-			err = Qt::MessageBox.new(nil,'Error Adding Skill','Cannot add skill.')
+			err = Qt::MessageBox.new(nil,'Error Adding Skill',$character.build.get_add_error())
 			err.show()
 		else
 			@skill_entry.current_index = 0
@@ -536,9 +536,7 @@ class BuildWidget < Qt::Widget
 	end
 
 	def update
-		@build_total.text = $character.experience.build.to_s
-		@spent_build.text = $character.build_spent.to_s
-		@loose_build.text = ($character.experience.build - $character.build_spent).to_s
+		self.update_banner
 
 		@primary_tree_layout.update
 		@secondary_tree_layout.update
@@ -976,6 +974,7 @@ class BaseWidget < Qt::Widget
 			file = fd.get_open_file_name
 		end
 		return unless file
+		self.new()
 		$log.debug "Opening '#{file}'"
 		@file = file
 
@@ -1206,11 +1205,11 @@ public
 		@tree.each_with_index do |t,i|
 			val = $character.build.spell_at(self.school, i+1)
 			t.text = val
-			$log.debug "Setting #{self.school}:#{i+1} to #{val}" if @tree_type == 'Primary'
+			$log.debug "Setting #{self.school}:#{i+1} to #{val}"
 		end
 
 
-		self.change_class
+		self.change_cost_tooltips
 	end
 
 	def school
@@ -1235,7 +1234,7 @@ public
 		return result
 	end
 
-	def change_class
+	def change_cost_tooltips
 		(0..8).each do |i|
 			@tree[i].toolTip = "Cost: #{@base_cost * spell_cost(i)}"
 		end
