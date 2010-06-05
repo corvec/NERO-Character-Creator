@@ -85,17 +85,17 @@ class Build
 	end
 
 	def spell spell
-		val = spell_at(spell.to_s.split(' ')[0],spell.to_s.split(' ')[1].to_i - 1)
-		$log.debug "Build::spell(#{spell}):#{val}"
+		val = spell_at(spell.to_s.split(' ')[0],spell.to_s.split(' ')[1].to_i)
+		$log.debug "Build::spell(#{spell}) = #{val}"
 		return val
 	end
 
 	def spell_at school, level
 		if !@spells.has_key?(school) or !(level.is_a? Integer) or (@spells[school].length < level) or (level < 1)
-			$log.debug "Build::spell_at(#{school},#{level}) : nil"
+			$log.warn "Build::spell_at(#{school},#{level}) = nil"
 			return 0
 		end
-		$log.debug "Build::spell_at(#{school},#{level}) : #{@spells[school][level - 1]}"
+		#$log.debug "Build::spell_at(#{school},#{level}) = #{@spells[school][level - 1]}"
 		@spells[school][level - 1]
 	end
 
@@ -108,6 +108,7 @@ class Build
 		tree.each_with_index do |spell_count, i|
 			@spells[school][i] = spell_count
 		end
+		self.legalize()
 	end
 
 	def spells_cost school
@@ -351,7 +352,7 @@ class Build
 	# Does NOT check to ensure that the removed skill is not
 	# satisfying other requirements; for that, run build.legal?() or build.legally_delete_skill
 	def delete_skill skill, options = {}, ranks = 1
-		$log.info "Build.delete_skill(#{skill},#{options},#{ranks})"
+		$log.info "Build::delete_skill(#{skill},#{options},#{ranks})"
 		@skills.each do |cskill|
 			if cskill.skill.name == skill
 				match = true
@@ -382,6 +383,7 @@ class Build
 	end
 
 	def legalize
+		$log.info "Build::legalize()"
 		domino = false
 		while !self.legal?
 			skills_to_delete = self.illegal_skills()
