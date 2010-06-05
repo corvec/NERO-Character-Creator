@@ -234,13 +234,21 @@ class Build
 		return c
 	end
 
+	def get_add_error
+		@add_error
+	end
+
+	# Add a skill
+	# If there is an error, store the error message in @add_error
 	def add_skill(skill, options={}, amount=1, force=false)
 		$log.debug "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force})"
+		@add_error = "No error occurred..."
 		unless skill.is_a? NERO_Skill
 			skill = $nero_skills.lookup(skill)
 		end
 
 		unless skill.is_a? NERO_Skill
+			@add_error = "Skill is not a NERO Skill."
 			return false
 		end
 
@@ -248,6 +256,7 @@ class Build
 			if force
 				self.set_spell skill, amount
 			end
+			@add_error = "Cannot add spells through this dialog"
 			return false
 		end
 
@@ -258,7 +267,11 @@ class Build
 		$log.debug "Skill #{skill.name} has #{skill.options.length} options"
 
 		if options.length < skill.options.length
-			$log.warn "Insufficienct options provided..."
+			$log.warn "Insufficient options provided..."
+			@add_error = "Insufficient options provided: Please provide the following options: |"
+			skill.options.each do |o|
+				@add_error += " #{o} |"
+			end
 			return false
 		end
 
@@ -267,17 +280,27 @@ class Build
 		char_skill = Character_Skill.new skill, options, amount, @character
 
 		if char_skill.cost == false
+			@add_error = "A cost is not defined for your character for this skill.  It is most likely a racial ability."
 			return false
 		end
 
 		unless force
 			unless char_skill.meets_prerequisites?(self)
 				$log.warn "Build.add_skill(#{skill.name}): Prerequisites not met"
+				@add_error = "Prerequisite(s) not met.  They are: |"
+				skill.prereqs.each do |prereq|
+					if prereq.is_a? Array
+						@add_error += " #{prereq[0]}x#{prereq[1]} |"
+					else
+						@add_error += " #{prereq} |"
+					end
+				end
 				return false
 			end
 			@skills.each do |skill_to_check|
 				if char_skill.is_included_in?(skill_to_check.skill)
 					$log.warn "Build.add_skill(#{skill.name}): Skill included in #{skill_to_check.name}"
+					@add_error = "This skill is included in the skill #{skill_to_check.name}, which you already have."
 					return false
 				end
 			end
@@ -289,33 +312,46 @@ class Build
 
 		# Check its includes and if they're present, delete them
 		unless force
-			# skill is a simple list for Style Master, 
-			if skill.includes.is_a? String
-				self.delete_skill inc_skill
-			elsif skill.includes.is_a? Array
-				skill.includes.each do |inc_skill|
-					if inc_skill.is_a? String
-						self.delete_skill inc_skill, options
-					end
-				end
-			elsif skill.includes.is_a? Hash
-				skill.includes.each do |inc_skill, inc_ranks|
-					if inc_skill.is_a? String
-						if self.delete_skill inc_skill, options, inc_ranks
-							break
-						end
-					end
-				end
-			end
+			self.delete_includes(skill,options)
 		end
 		return true
 	end
 
+	def delete_includes skill, options, i=0
+		$log.info "delete_includes(#{skill.name}, #{options}, #{i})"
+		return if i > 5
+
+		
+		# skill is a simple list for Style Master, 
+		if skill.includes.is_a? Array
+			$log.info "delete_includes: includes = #{skill.includes.join(',')}"
+			skill.includes.each do |inc_skill|
+				if inc_skill.is_a? String
+					self.delete_skill inc_skill, options
+					rec_skill =  $nero_skills.lookup(inc_skill)
+					self.delete_includes(rec_skill, options, i+1) if rec_skill.is_a? NERO_Skill
+				end
+			end
+		elsif skill.includes.is_a? Hash
+			$log.info "delete_includes: includes = #{skill.includes.to_s}"
+			skill.includes.each do |inc_skill, inc_ranks|
+				if inc_skill.is_a? String
+					if self.delete_skill inc_skill, options, inc_ranks
+						break
+					end
+				end
+			end
+		else
+			$log.error "skill.includes in an unusable format!"
+			return false
+		end
+	end
 
 	# Intended to be used by add_skill upon finding includes
 	# Does NOT check to ensure that the removed skill is not
 	# satisfying other requirements; for that, run build.legal?() or build.legally_delete_skill
 	def delete_skill skill, options = {}, ranks = 1
+		$log.info "Build.delete_skill(#{skill},#{options},#{ranks})"
 		@skills.each do |cskill|
 			if cskill.skill.name == skill
 				match = true
@@ -444,9 +480,9 @@ private
 		os.each do |option|
 			option.strip!
 			if ['Proficiency','Critical Attack','Critical Slay/Parry'].include? skill_name
-				if option.include? 'Right'
+				if option.downcase.include? 'right'
 					results['Hand'] = 'Right'
-				elsif option.include? 'Left'
+				elsif option.downcase.include? 'left'
 					results['Hand'] = 'Left'
 				else
 					options = options.gsub /Weapon.*[^A-Za-z]/, ''
@@ -455,9 +491,9 @@ private
 			elsif skill_name == 'Craftsman Other'
 				results['Type'] = option
 			elsif ['Master Proficiency','Master Critical Attack','Master Critical Slay/Parry','Backstab','Back Attack','Assassinate/Dodge'].include? skill_name
-				if option.include? 'Right'
+				if option.downcase.include? 'right'
 					results['Hand'] = 'Right'
-				elsif option.include? 'Left'
+				elsif option.downcase.include? 'left'
 					results['Hand'] = 'Left'
 				end
 			end
