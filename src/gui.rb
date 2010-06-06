@@ -1201,13 +1201,11 @@ public
 
 public
 	def update
-		$log.info "Updating #{@tree_type}:#{self.school} tree"
+		$log.debug "SpellTree(#{self.school},#{@tree_type}).update()"
 		@tree.each_with_index do |t,i|
 			val = $character.build.spell_at(self.school, i+1)
 			t.text = val
-			$log.debug "Setting #{self.school}:#{i+1} to #{val}"
 		end
-
 
 		self.change_cost_tooltips
 	end
