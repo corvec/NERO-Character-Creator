@@ -9,14 +9,76 @@ WARN:	a warning
 INFO:	generic (useful) information about system operation
 DEBUG:	low-level information for developers 
 =end
+class TempLog
+	attr_reader :msg
+	def initialize
+		@msg = []
+	end
+	def debug m
+		@msg << [:D,m]
+	end
+	def info m
+		@msg << [:I,m]
+	end
+	def warn m
+		@msg << [:W,m]
+	end
+	def error m
+		@msg << [:E,m]
+	end
+	def fatal m
+		@msg << [:F,m]
+	end
 
-# Remove this line for production
-#$log = Logger.new(STDOUT) unless defined? $log
+	def TempLog.export data
+		data.each do |m|
+			case m[0]
+			when :D then
+				$log.debug m[1]
+			when :I then
+				$log.info m[1]
+			when :W then
+				$log.warn m[1]
+			when :E then
+				$log.error m[1]
+			when :F then
+				$log.fatal m[1]
+			end
+		end
+	end
+end
 
-# Creates a logger that ages files once they reach 100KB and stores up to 20
-$log = Logger.new(Dir.pwd + '/nero.log', 20, 102400) unless defined? $log
 
-$log.sev_threshold = Logger::INFO
+
+$log = TempLog.new()
+
+def init_log
+	temp_data = $log.msg
+	if $config.setting('Log Output').upcase == "STDOUT"
+		$log = Logger.new(STDOUT)
+	else
+		# Creates a logger based off of configuration settings
+		$log = Logger.new($config.setting('Log Output'), $config.setting('Log Count'), $config.setting('Log Size'))
+	end
+
+	TempLog.export(temp_data)
+	
+	$log.sev_threshold = Logger::INFO
+	unless $config.setting("Log Threshold").nil?
+		case $config.setting.upcase
+		when 'DEBUG' then
+			$log.sev_threshold = Logger::DEBUG
+		when 'INFO' then
+			$log.sev_threshold = Logger::INFO
+		when 'WARN' then
+			$log.sev_threshold = Logger::WARN
+		when 'ERROR' then
+			$log.sev_threshold = Logger::ERROR
+		when 'FATAL' then
+			$log.sev_threshold = Logger::FATAL
+		end
+	end
+end
 
 if __FILE__ == $0
 	$log = Logger.new('log.log',10,102400)
