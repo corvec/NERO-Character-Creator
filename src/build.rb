@@ -31,6 +31,7 @@ class Build
 		@spells['Earth'] = [0] * 9
 		@spells['Celestial'] = [0] * 9
 		@spells['Nature'] = [0] * 9
+		@needs_commit = true
 		if filename != nil
 			self.load YAML.load(File.new(filename))['Build']
 		end
@@ -79,23 +80,23 @@ class Build
 		unless spell.is_a? String
 			spell = spell.name
 		end
-		$log.info "Build::set_spell(#{spell},#{amount})"
+		$log.info "Build.set_spell(#{spell.inspect},#{amount.inspect})"
 		@spells[spell.split(' ')[0]][spell.split(' ')[1].to_i - 1] = amount
-		$log.debug self.spell(spell)
+		$log.debug "Build.set_spell() = #{self.spell(spell).inspect}"
 	end
 
 	def spell spell
 		val = spell_at(spell.to_s.split(' ')[0],spell.to_s.split(' ')[1].to_i)
-		$log.debug "Build::spell(#{spell}) = #{val}"
+		$log.debug "Build.spell(#{spell.inspect}) = #{val.inspect}"
 		return val
 	end
 
 	def spell_at school, level
 		if !@spells.has_key?(school) or !(level.is_a? Integer) or (@spells[school].length < level) or (level < 1)
-			$log.warn "Build::spell_at(#{school},#{level}) = nil"
+			$log.warn "Build.spell_at(#{school.inspect},#{level.inspect}) = nil"
 			return 0
 		end
-		#$log.debug "Build::spell_at(#{school},#{level}) = #{@spells[school][level - 1]}"
+		#$log.debug "Build::spell_at(#{school.inspect},#{level.inspect}) = #{@spells[school][level - 1].inspect}"
 		@spells[school][level - 1]
 	end
 
@@ -104,17 +105,30 @@ class Build
 	end
 
 	def set_tree school, tree
-		$log.info "Build::set_tree(#{school},#{tree.join '/'})"
+		$log.info "Build.set_tree(#{school.inspect},#{tree.inspect})"
+
+
+		if $config.setting('Enforce Build')
+			base_diff = self.spells_cost(school,tree) - self.spells_cost(school)
+			tree_mult = school == @character.primary ? 1 : 2
+			if base_diff > 0 and (base_diff * tree_mult > @character.experience.build - self.calculate_cost)
+				@add_error = "Cannot add spell because you do not have enough loose build to support the resulting tree: \n #{tree.join('/')}"
+				return false
+			end
+		end
+
 		tree.each_with_index do |spell_count, i|
 			@spells[school][i] = spell_count
 		end
 		self.legalize()
+		return true
 	end
 
-	def spells_cost school
+	def spells_cost school, tree = nil
+		tree = @spells[school] if tree == nil
 		cost = 0
 		(0..8).each do |i|
-			cost += spell_cost(i) * @spells[school][i]
+			cost += spell_cost(i) * tree[i]
 		end
 		return cost
 	end
@@ -248,16 +262,17 @@ class Build
 			skill = $nero_skills.lookup(skill)
 		end
 
+		$log.debug "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force.inspect})"
+
 		unless skill.is_a? NERO_Skill
+			$log.error "Build.add_skill(#{skill.inspect}) - Skill was not found in the lookup table."
 			@add_error = "Skill is not a NERO Skill."
 			return false
 		end
 
 		if skill.is_a_spell?
-			if force
-				self.set_spell skill, amount
-			end
-			@add_error = "Cannot add spells through this dialog"
+			return self.set_spell(skill, amount) if force
+			@add_error = "Build.add_skill(#{skill.name.inspect}) - Cannot add spells through this dialog"
 			return false
 		end
 
@@ -265,10 +280,10 @@ class Build
 			options = parse_options(options,skill.name)
 		end
 
-		$log.debug "Skill #{skill.name} has #{skill.options.length} options"
+		$log.debug "Build.add_skill(#{skill.name.inspect}) - Skill requires #{skill.options.length} options"
 
 		if options.length < skill.options.length
-			$log.warn "Insufficient options provided..."
+			$log.warn "Build.add_skill(#{skill.name.inspect}) - Insufficient options provided..."
 			@add_error = "Insufficient options provided: Please provide the following options: |"
 			skill.options.each do |o|
 				@add_error += " #{o} |"
@@ -276,19 +291,18 @@ class Build
 			return false
 		end
 
-		$log.debug "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force})"
-
 		char_skill = Character_Skill.new skill, options, amount, @character
 
 		if char_skill.cost == false
-			@add_error = "A cost is not defined for your character for this skill.  It is most likely a racial ability."
+			@add_error = "You cannot add #{skill.name} because it does not have a cost defined for your character.  It is most likely a racial ability."
+			$log.warn "Build.add_skill(#{skill.name.inspect}): Cost undefined."
 			return false
 		end
 
 		unless force
 			unless char_skill.meets_prerequisites?(self)
-				$log.warn "Build.add_skill(#{skill.name}): Prerequisites not met"
-				@add_error = "Prerequisite(s) not met.  They are: |"
+				$log.warn "Build.add_skill(#{skill.name.inspect}): Prerequisites not met"
+				@add_error = "You cannot add '#{skill.name}' because you are missing some prerequisite.  The prerequisites are: |"
 				skill.prereqs.each do |prereq|
 					if prereq.is_a? Array
 						@add_error += " #{prereq[0]}x#{prereq[1]} |"
@@ -300,8 +314,16 @@ class Build
 			end
 			@skills.each do |skill_to_check|
 				if char_skill.is_included_in?(skill_to_check.skill)
-					$log.warn "Build.add_skill(#{skill.name}): Skill included in #{skill_to_check.name}"
-					@add_error = "This skill is included in the skill #{skill_to_check.name}, which you already have."
+					$log.warn "Build.add_skill(#{skill.name.inspect}): Skill included in #{skill_to_check.name.inspect}"
+					@add_error = "You cannot add '#{skill.name}' because it is included in #{skill_to_check.name}, which you already have."
+					return false
+				end
+			end
+			if $config.setting('Enforce Build') 
+				$log.debug "Build.add_skill(#{skill.name}) - Enforce Build is true.  Checking to see if (#{self.calculate_cost()} + #{char_skill.cost()} - #{self.includes_cost(skill)}) > #{@character.experience.build}"
+				if (self.calculate_cost() + char_skill.cost() - self.includes_cost(skill)) > @character.experience.build
+					$log.warn "Build.add_skill(#{skill.name.inspect}): Not enough loose build."
+					@add_error = "You cannot add #{skill.name} because you do not have enough loose build!"
 					return false
 				end
 			end
@@ -318,14 +340,99 @@ class Build
 		return true
 	end
 
-	def delete_includes skill, options, i=0
-		$log.info "delete_includes(#{skill.name}, #{options}, #{i})"
+	# Returns the cost currently spent upon the skills included by the listed skill
+	def includes_cost nero_skill
+		$log.debug "Build.includes_cost(#{nero_skill.name.inspect})"
+		includes = nero_skill.get_all_includes()
+
+		cskills = self.find_skills(includes)
+
+		cost = 0
+		cskills.each do |cskill|
+			cost += cskill.cost
+		end
+		$log.info "Build.includes_cost(#{nero_skill.name.inspect}) = #{cost.inspect}"
+		return cost
+	end
+
+	# Returns a list of character skills
+	def find_skills skills
+		$log.debug "Build.find_skills(#{skills.inspect})"
+		skill_list = []
+		if skills.is_a? Hash
+			skills.each do |skill,ranks|
+				temp_cskill = self.lookup(skill)
+				next if temp_cskill.nil?
+				nskill = $nero_skills.lookup(skill)
+				cskill = Character_Skill.new(nskill, temp_cskill.options, ranks, @character)
+				skill_list << cskill unless cskill.nil?
+			end
+			return skill_list
+		end
+		if skills.is_a? Array
+			skills.each do |skill|
+				cskill = self.lookup(skill)
+				skill_list << cskill unless cskill.nil?
+			end
+			return skill_list
+		end
+		if skills.is_a? String
+			skill = skills
+			cskill = self.lookup(skill)
+			skill_list << cskill unless cskill.nil?
+			return skill_list
+		end
+	end
+
+	def lookup skill, options = {}
+		$log.debug "Build.lookup(#{skill.inspect},{#{options.inspect}.inspect})"
+		@skills.each do |cskill|
+			if cskill.skill.name == skill
+				match = true
+				options.each do |o,v|
+					match = false if cskill.options[o] != v
+				end
+				return cskill if match
+			end
+		end
+		return nil
+	end
+
+	# Indicates whether or not the build has changed since this was last called
+	def commit?
+		temp = @needs_commit
+		@needs_commit = false
+
+		$log.debug "Build.commit?() = #{temp.inspect}"
+		return temp
+	end
+
+	def delete_includes nero_skill, options
+		$log.info "Build.delete_includes(#{nero_skill.name.inspect}, #{options.inspect})"
+
+		includes = nero_skill.get_all_includes()
+		if includes.is_a? Array
+			included_skills = self.find_skills(includes)
+		elsif includes.is_a? Hash
+			included_skills = self.find_skills(includes.keys)
+		end
+		included_skills.each do |inc_skill|
+			if includes.is_a? Array
+				self.delete_skill(inc_skill.name, inc_skill.options, inc_skill.count)
+			elsif includes.is_a? Hash
+				self.delete_skill(inc_skill.name, inc_skill.options, includes[inc_skill.name])
+			end
+		end
+		return true
+	end
+
+	def old_delete_includes skill, options, i=0
+		$log.info "Build.delete_includes(#{skill.name.inspect}, {#{options.inspect}}, #{i})"
 		return if i > 5
 
 		
-		# skill is a simple list for Style Master, 
 		if skill.includes.is_a? Array
-			$log.info "delete_includes: includes = #{skill.includes.join(',')}"
+			$log.info "delete_includes: includes = #{skill.includes.inspect}"
 			skill.includes.each do |inc_skill|
 				if inc_skill.is_a? String
 					self.delete_skill inc_skill, options
@@ -334,7 +441,7 @@ class Build
 				end
 			end
 		elsif skill.includes.is_a? Hash
-			$log.info "delete_includes: includes = #{skill.includes.to_s}"
+			$log.info "delete_includes: includes = #{skill.includes.inspect}"
 			skill.includes.each do |inc_skill, inc_ranks|
 				if inc_skill.is_a? String
 					if self.delete_skill inc_skill, options, inc_ranks
@@ -352,7 +459,9 @@ class Build
 	# Does NOT check to ensure that the removed skill is not
 	# satisfying other requirements; for that, run build.legal?() or build.legally_delete_skill
 	def delete_skill skill, options = {}, ranks = 1
-		$log.info "Build::delete_skill(#{skill},#{options},#{ranks})"
+		$log.info "Build.delete_skill(#{skill.inspect},#{options.inspect},#{ranks.inspect})"
+		$log.debug("Build.delete_skill() - @needs_commit = true")
+		@needs_commit = true
 		@skills.each do |cskill|
 			if cskill.skill.name == skill
 				match = true
@@ -364,10 +473,10 @@ class Build
 				if match
 					if cskill.count > ranks and ranks != 0
 						cskill.count= cskill.count - ranks
-						$log.info "Build.delete_skill(#{skill}) - #{ranks} rank(s) removed"
+						$log.info "Build.delete_skill(#{skill.inspect}) - #{ranks} rank(s) removed"
 					else
 						@skills.delete cskill
-						$log.info "Build.delete_skill(#{skill}) - Skill deleted"
+						$log.info "Build.delete_skill(#{skill.inspect}) - Skill deleted"
 					end
 					break
 				end
@@ -376,8 +485,13 @@ class Build
 	end
 
 	def legally_delete_skill skill, options = {}, ranks = 1
-		$log.info "Build::legally_delete_skill(#{skill})"
+		$log.info "Build::legally_delete_skill(#{skill.inspect})"
+		temp = @needs_commit
 		self.delete_skill skill, options, ranks
+		unless temp or self.count(skill, options) == 0
+			@needs_commit = false 
+			$log.debug("Build.legally_delete_skill() - @needs_commit = false")
+		end
 
 		self.legalize
 	end
@@ -388,20 +502,20 @@ class Build
 		while !self.legal?
 			skills_to_delete = self.illegal_skills()
 			skills_to_delete.each do |skill|
-				$log.warn "Build::legalize() - Deleting #{skill}"
+				$log.warn "Build::legalize() - Deleting #{skill.inspect}"
 				domino = true
 				self.delete_skill skill
 			end
 			self.legalize_spell_tree()
 		end
-		$log.debug "Build::legalize() - Domino: #{domino}"
+		$log.debug "Build::legalize() - Domino: #{domino.inspect}"
 		return domino
 	end
 
 	def legal?
 		@skills.each do |s|
 			if !s.meets_prerequisites?(self, 0) or s.cost == false
-				$log.debug "Build not legal.  #{s.skill.name} does not meet its prerequisites or is prohibited."
+				$log.debug "Build not legal.  #{s.skill.inspect} does not meet its prerequisites or is prohibited."
 				return false
 			end
 		end
@@ -438,21 +552,25 @@ class Build
 		return count
 	end
 
+	# Counts master profs in the passed hand
 	def count_mprofs options
 		o = options.clone
 		o.delete 'Weapon'
 		return self.count('Master Proficiency',o)
 	end
 
+	# Counts master slays in the given hand
 	def count_mslays options
 		o = options.clone
 		o.delete 'Weapon'
 		return self.count('Master Critical Slay/Parry',o)
 	end
+
 private
 	def force_add_skill(char_skill, force)
+		$log.debug("Build.force_add_skill(Character_Skill(#{char_skill.name.inspect},#{char_skill.count.inspect},#{char_skill.options.inspect}),#{force.inspect})")
 		if self.count(char_skill.name, char_skill.options) > 0
-			$log.info "Build.force_add_skill(#{char_skill.name}): Increasing existing skill to #{char_skill.count + self.count(char_skill.name, char_skill.options)}"
+			$log.info "Build.force_add_skill(#{char_skill.name.inspect}): Increasing existing skill to #{char_skill.count + self.count(char_skill.name, char_skill.options)}"
 			@skills.each do |s|
 				if s.name == char_skill.name
 					options_match = true
@@ -470,7 +588,10 @@ private
 				end
 			end
 		else
-			$log.info "Build.force_add_skill(#{char_skill.name},#{char_skill.count}): Adding new skill"
+			$log.info "Build.force_add_skill(#{char_skill.name.inspect},#{char_skill.count}): Adding new skill"
+			@needs_commit = true
+			$log.debug("Build.force_add_skill() - @needs_commit = true")
+			char_skill.actualize()
 			@skills << char_skill
 		end
 	end
@@ -501,7 +622,7 @@ private
 			end
 		end
 
-		$log.debug "Build.parse_options('#{options}','#{skill_name}') return length = #{results.length}"
+		$log.debug "Build.parse_options('#{options.inspect}','#{skill_name.inspect}') return length = #{results.length}"
 
 		return results
 	end

@@ -38,12 +38,12 @@ class Experience
 			Experience.initialize_statics()
 		end
 
-		@experience = 65
-		@loose = 0
-		@build = 30
-		@history = []
-		@trail = []
-		@traild= []
+		@experience = 65 # Total Experience
+		@loose = 0 # Loose experience (after this build)
+		@build = 30 # Total build
+		@history = [] # History for the purpose of undoing actions
+		@trail = [] # String trail, for YAML export
+		@traild= [] # Data trail, for YAML export
 
 		if experience != nil or build != nil
 			if build != nil

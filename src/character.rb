@@ -231,13 +231,7 @@ class NERO_Character
 		<td align="right"><strong>Home Chapter:</strong></td>
 		<td><span id="home_c">'
 		
-		begin
-			File.open($data_path + 'chapter.ini','r') { |f|
-				s += f.gets
-			}
-		rescue
-			return ''
-		end
+		s += $config.setting('Chapter')
 
 		
 		s += '</span></td>
@@ -478,6 +472,7 @@ class NERO_Character
 			@name = info['Character Name']
 			@date_created = info['Created']
 			@race = NERO_Race.new info['Race']
+			@subrace = info['Subrace']
 			@character_class = NERO_Class.new info['Class']
 			@primary = info['Primary School']
 			@secondary = info['Secondary School']
@@ -488,8 +483,10 @@ class NERO_Character
 			@build.load(yaml_parse['Build'])
 			@experience.load(yaml_parse['Experience'])
 			@backstory = yaml_parse['Backstory']
-		rescue
+		rescue Exception => e
 			$log.error "Failed to load character!"
+			$log.error e.inspect
+			$log.error e.backtrace
 			return false
 		end
 	end
@@ -498,8 +495,8 @@ end
 class Death_History
 	attr_reader :deaths
 	def initialize death_list = nil, indent_level = 1
+		$log.info "Loading Death List: [#{death_list.join(',')}]" unless death_list.nil?
 		death_list = [] if death_list.nil?
-		$log.info "Loading Death List: [#{death_list.join(',')}]"
 		@deaths = death_list
 		@indent_l = indent_level
 		@indent = '   '

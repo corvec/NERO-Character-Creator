@@ -18,10 +18,12 @@
 	If not, see <http://www.gnu.org/licenses/>.
 =end
 
+require 'set'
+
 # Handles access to the list of skills
 class NERO_Skills
 	attr_reader :skills
-	def initialize(filename = $data_path + 'skills.yml')
+	def initialize(filename = 'skills.yml')
 		skills = YAML::load(File.open(filename))
 		$log.info "Initializing Skills"
 		@skills = {}
@@ -238,6 +240,39 @@ class NERO_Skill
 	def is_a_spell?
 		@name.match /\w \d/
 	end
+
+	def get_all_includes includes = nil, recurse = nil
+		if includes == nil
+			if @includes.is_a? Array
+				includes = @includes
+			elsif @includes.is_a? Hash
+				return @includes
+			else
+				$log.warn "NERO_Skill(#{@name}) has includes in an invalid format!"
+				return []
+			end
+		end
+		recurse = 0 if recurse == nil
+
+		$log.debug "#{@name}.get_all_includes(#{includes.inspect},#{recurse})"
+
+		return includes if recurse >= 5 or includes.nil?
+		extra_includes = []
+		includes.each do |skill_name|
+			nskill = $nero_skills.lookup(skill_name)
+			next if nskill.nil?
+			extra_includes = extra_includes + nskill.includes unless nskill.includes.nil?
+		end
+		extra_includes = extra_includes - includes
+		includes = Set.new(includes + extra_includes).to_a
+		if extra_includes.empty?
+			$log.info "#{@name}.get_all_includes() = #{includes.inspect}"
+			return includes
+		end
+		return get_all_includes(includes, recurse + 1)
+	end
+
+
 end
 
 if __FILE__ == $0

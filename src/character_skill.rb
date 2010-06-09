@@ -24,7 +24,7 @@ class Character_Skill
 		@skill = nero_skill
 		@options = options
 		amount = amount.to_i
-		$log.debug "New Character Skill: #{amount}x #{nero_skill.name} (#{options})"
+		$log.debug "Character_Skill.new(#{nero_skill.name.inspect},#{options.inspect},#{amount.inspect})"
 		if amount.is_a? Integer
 			@count = nero_skill.apply_limit(amount)
 		else
@@ -35,6 +35,7 @@ class Character_Skill
 			$log.warn "Character_Skill.new(): Limited amount to #{@count}"
 		end
 		@character = character
+		@temp = true
 	end
 
 	# Set the number of this skill to the passed amount.
@@ -47,6 +48,10 @@ class Character_Skill
 	# Returns the name of this skill
 	def name
 		return @skill.name
+	end
+
+	def actualize
+		@temp = false
 	end
 
 
@@ -114,12 +119,23 @@ class Character_Skill
 		# must be a prof:
 		# Note that this implementation assumes that you can have a 
 		# minimum priced first master prof and a minimum priced first prof
-		# This may not be legitimate.
+		# This changes in 9th Edition
 		if @count >= 3
 			return cost[0] + cost[1] + (cost[2]*(@count-2))
 		end
 		if @count == 2
 			return cost[0] + cost[1]
+		end
+		# The following occurs when calculating the cost of a solitary temporary prof
+		if build != nil and @temp
+			if @skill.name.match('Master')
+				set = build.count('Master Proficiency', @options)
+				set = 2 if set > 2
+			else
+				set = build.count('Proficiency', @options)
+				set = 2 if set > 2
+			end
+			return cost[set]
 		end
 		return cost[0]
 	end
