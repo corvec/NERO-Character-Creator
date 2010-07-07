@@ -1,0 +1,44 @@
+--- 
+Backstory: ""
+Experience: 
+- Build: 150
+  Type: Reset
+Info: 
+  Secondary School: Celestial
+  Primary School: Earth
+  Spirit Effects: []
+
+  Created: 2010-07-27
+  Body Effects: []
+
+  Class: Scholar
+  Subrace: ""
+  Race: Human
+  Character Name: ""
+  Death History: []
+
+  Player Name: ""
+Build: 
+- Read and Write
+- First Aid
+- Healing Arts
+- Formal Magic (Earth): 
+    Count: 1
+- Earth 1: 
+    Count: 4
+- Earth 2: 
+    Count: 4
+- Earth 3: 
+    Count: 4
+- Earth 4: 
+    Count: 4
+- Earth 5: 
+    Count: 4
+- Earth 6: 
+    Count: 4
+- Earth 7: 
+    Count: 3
+- Earth 8: 
+    Count: 2
+- Earth 9: 
+    Count: 1

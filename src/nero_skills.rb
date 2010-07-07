@@ -23,29 +23,10 @@ require 'set'
 # Handles access to the list of skills
 class NERO_Skills
 	attr_reader :skills
-	def initialize(filename = $config.setting('Skill Data'))
+	def initialize(filename = 'skills.yml')
+		skills = YAML::load(File.open(filename))
 		$log.info "Initializing Skills"
 		@skills = {}
-		self.add_file(filename)
-		num = 1
-		until $config.setting("Module #{num}").nil?
-			begin
-				self.add_file($config.setting)
-			rescue
-				begin
-					$log.info("Could not load Module #{$config.setting} in current directory.  Trying working directory.")
-					self.add_file("#{$config.setting('Working Directory')}/#{$config.setting("Module #{num}")}")
-				rescue
-					$log.error("Could not load Module #{$config.setting}")
-				end
-			end
-			num += 1
-		end
-	end
-
-	def add_file filename
-		$log.info "Adding file #{filename} to skill list"
-		skills = YAML::load(File.open(filename))
 		skills.each do |name, prop|
 			skill = NERO_Skill.new(
 				name,
@@ -55,20 +36,10 @@ class NERO_Skills
 				prop['Options'],
 				prop['Max'],
 				prop['Scholarly'],
-				prop['Prohibits'],
-				(not prop['Invisible'])
+				prop['Prohibits']
 			)
 			@skills[name] = skill
 		end
-	end
-
-	# Return the names of the skills, in alphabetical order
-	def skill_names
-		names = []
-		@skills.sort.each do |s|
-			names << s[0] if s[1].visible
-		end
-		return names
 	end
 
 	# Causes $nero_skills.lookup(copy) to point to skill
@@ -91,7 +62,7 @@ end
 
 # Stored in NERO_Skills
 class NERO_Skill
-	attr_reader :name, :cost, :prereqs, :includes, :options, :limit, :scholarly, :prohibits, :visible
+	attr_reader :name, :cost, :prereqs, :includes, :options, :limit, :scholarly, :prohibits
 	def initialize(
 		skill_name,
 		cost,
@@ -100,8 +71,7 @@ class NERO_Skill
 		options = nil,
 		limit = nil,
 		scholarly = nil,
-		prohibits = nil,
-		visible = nil)
+		prohibits = nil)
 		# Example Parameters:
 		# skill_name = "Smithing",
 		# cost = {'Dwarf Fighter' => 2,
@@ -131,7 +101,6 @@ class NERO_Skill
 		@limit     = limit     if limit != nil
 		@scholarly = scholarly if scholarly != nil
 		@prohibits = prohibits
-		@visible   = visible
 	end
 
 	def cost class_name, race

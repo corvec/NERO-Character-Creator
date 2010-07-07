@@ -114,64 +114,28 @@ class ExperienceWidget < Qt::Widget
 
 
 		# Layout for Adding goblins
-		unless ['Group','Individual'].include? $config.setting('Goblins')
-			$config.update_setting('Goblins', 'Individual')
-		end
-		case $config.setting
-		when 'Group'
-			add_goblins_layout.addWidget(Qt::Label.new('Goblin Blanket'))
-			goblin_button_1 = Qt::PushButton.new('1 Week')
-			goblin_button_1.connect(SIGNAL(:clicked)) {
-				td = @add_event_date.date
-				$character.experience.add_pc_event 'Goblin Blankets', Date.new(td.year,td.month,td.day), 1, true
-				self.commit
-			}
-			add_goblins_layout.addWidget(goblin_button_1)
-			goblin_button_2 = Qt::PushButton.new('2 Week')
-			goblin_button_2.connect(SIGNAL(:clicked)) {
-				td = @add_event_date.date
-				$character.experience.add_pc_event 'Goblin Blankets', Date.new(td.year,td.month,td.day), 2, true
-				self.commit
-			}
-			add_goblins_layout.addWidget(goblin_button_2)
-			goblin_button_3 = Qt::PushButton.new('3 Week')
-			goblin_button_3.connect(SIGNAL(:clicked)) {
-				td = @add_event_date.date
-				$character.experience.add_pc_event 'Goblin Blankets', Date.new(td.year,td.month,td.day), 3, true
-				self.commit
-			}
-			add_goblins_layout.addWidget(goblin_button_3)
-			goblin_button_4 = Qt::PushButton.new('4 Week')
-			goblin_button_4.connect(SIGNAL(:clicked)) {
-				td = @add_event_date.date
-				$character.experience.add_pc_event 'Goblin Blankets', Date.new(td.year,td.month,td.day), 4, true
-				self.commit
-			}
-			add_goblins_layout.addWidget(goblin_button_4)
-		when 'Individual'
-			add_goblins_layout.addWidget(Qt::Label.new('Goblin Blanket'))
-			goblin_button_1 = Qt::PushButton.new('1 Week')
-			goblin_button_1.connect(SIGNAL(:clicked)) {
-				td = @add_event_date.date
-				$character.experience.add_goblin_blankets Date.new(td.year,td.month,td.day), 1
-				self.commit
-			}
-			add_goblins_layout.addWidget(goblin_button_1)
-			goblin_button_2 = Qt::PushButton.new('4 Weeks')
-			goblin_button_2.connect(SIGNAL(:clicked)) {
-				td = @add_event_date.date
-				$character.experience.add_goblin_blankets Date.new(td.year,td.month,td.day), 4
-				self.commit
-			}
-			add_goblins_layout.addWidget(goblin_button_2)
-			goblin_button_3 = Qt::PushButton.new('5 Weeks')
-			goblin_button_3.connect(SIGNAL(:clicked)) {
-				td = @add_event_date.date
-				$character.experience.add_goblin_blankets Date.new(td.year,td.month,td.day), 5
-				self.commit
-			}
-			add_goblins_layout.addWidget(goblin_button_3)
-		end
+		add_goblins_layout.addWidget(Qt::Label.new('Goblin Blanket'))
+		goblin_button_1 = Qt::PushButton.new('1 Week')
+		goblin_button_1.connect(SIGNAL(:clicked)) {
+			td = @add_event_date.date
+			$character.experience.add_goblin_blankets Date.new(td.year,td.month,td.day), 1
+			self.commit
+		}
+		add_goblins_layout.addWidget(goblin_button_1)
+		goblin_button_2 = Qt::PushButton.new('4 Weeks')
+		goblin_button_2.connect(SIGNAL(:clicked)) {
+			td = @add_event_date.date
+			$character.experience.add_goblin_blankets Date.new(td.year,td.month,td.day), 4
+			self.commit
+		}
+		add_goblins_layout.addWidget(goblin_button_2)
+		goblin_button_3 = Qt::PushButton.new('5 Weeks')
+		goblin_button_3.connect(SIGNAL(:clicked)) {
+			td = @add_event_date.date
+			$character.experience.add_goblin_blankets Date.new(td.year,td.month,td.day), 5
+			self.commit
+		}
+		add_goblins_layout.addWidget(goblin_button_3)
 
 		# Layout for Custom Blankets
 		add_custom_layout.addWidget(Qt::Label.new('Custom: Add'))

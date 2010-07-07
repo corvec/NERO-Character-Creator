@@ -89,7 +89,9 @@ class BaseWidget < Qt::Widget
 		action_exit.connect(SIGNAL(:triggered)) {
 			self.menu_exit()
 		}
-		
+		#connect(action_exit, SIGNAL('triggered()'),
+				  #self, SLOT('menu_exit()'))
+
 		#Experience Menu
 		@exp_menu = Qt::Menu.new('&Experience')
 		action_set_exp = Qt::Action.new('Set E&xperience',self)
@@ -99,33 +101,29 @@ class BaseWidget < Qt::Widget
 		action_exp_undo = Qt::Action.new('&Undo',self)
 		action_exp_undo.shortcut = Qt::KeySequence.new("Ctrl+Z")
 		action_set_exp.connect(SIGNAL(:triggered)) {
-			qt_okay = Qt::Boolean.new()
-			val = Qt::InputDialog::getInteger(nil,'Set Experience','Experience',$character.experience.experience,0,999999999,1,qt_okay)
-			if qt_okay.value
+			val = Qt::InputDialog::getInteger(nil,'Set Experience','Experience',$character.experience.experience,0,999999999)
+			if val != nil
 				$character.experience.reset({:experience => val})
 				self.commit
 			end
 		}
 		action_set_build.connect(SIGNAL(:triggered)) {
-			qt_okay = Qt::Boolean.new()
-			val = Qt::InputDialog::getInteger(nil,'Set Build','Build',$character.experience.build,15,8419,1,qt_okay)
-			if qt_okay.value
+			val = Qt::InputDialog::getInteger(nil,'Set Build','Build',$character.experience.build,15,8419)
+			if val != nil
 				$character.experience.reset({:build => val})
 				self.commit
 			end
 		}
 		action_set_loose.connect(SIGNAL(:triggered)) {
-			qt_okay = Qt::Boolean.new()
-			val = Qt::InputDialog::getInteger(nil,'Set Loose Experience','Loose Experience',$character.experience.loose,1,0,999999999999,1,qt_okay)
-			if qt_okay.value
+			val = Qt::InputDialog::getInteger(nil,'Set Loose Experience','Loose Experience',$character.experience.loose,0,999999999999)
+			if val != nil
 				$character.experience.reset({:loose => val})
 				self.commit
 			end
 		}
 		action_set_level.connect(SIGNAL(:triggered)) {
-			qt_okay = Qt::Boolean.new()
-			val = Qt::InputDialog::getInteger(nil,'Set Level','Level',$character.experience.level,1,841,1,qt_okay)
-			if qt_okay.value
+			val = Qt::InputDialog::getInteger(nil,'Set Level','Level',$character.experience.level,1,841)
+			if val != nil
 				$character.experience.reset({:level => val})
 				self.commit
 			end
@@ -160,17 +158,15 @@ class BaseWidget < Qt::Widget
 
 		self.new()
 
-		if $config.setting('Autosave')
-			if File.exists? $config.setting('Autosave')
-				$character.load $config.setting('Autosave')
-				if $character.build.commit?
-					$tabs.each do |tab|
-						tab.update
-					end
+		if File.exists? 'ncc.yml'
+			$character.load 'ncc.yml'
+			if $character.build.commit?
+				$tabs.each do |tab|
+					tab.update
 				end
 			end
-			$tabs << AutoSaver.new($config.setting('Autosave'))
 		end
+		$tabs << AutoSaver.new('ncc.yml')
 	end
 
 	# Saves the file over the file most recently saved or opened
@@ -179,9 +175,9 @@ class BaseWidget < Qt::Widget
 		return self.save_as(@file)
 	end
 
-	def export(file = nil)
+	def export(file=nil)
 		$log.debug "Exporting"
-		file = "#{$config.setting('Export')}/Tempsheet - #{$character.player_name} (#{$character.name}).html" if file.nil?
+		file = "#{ENV['USERPROFILE']}/Desktop/Tempsheet - #{$character.player_name} (#{$character.name}).html"
 		$log.debug "Exporting #{file}"
 		begin
 			File.open(file,'w') { |f|
@@ -215,12 +211,10 @@ class BaseWidget < Qt::Widget
 
 		begin
 			File.open(@file,'w') { |f|
-				f.write($character.to_yaml)
+				f.write($character.to_s)
 			}
-		rescue Exception => e
+		rescue
 			$log.error "Could not save to file #{@file}"
-			$log.error e.inspect
-			$log.error e.backtrace
 			err = Qt::MessageBox.new(nil,"Error Saving","Could not save to file #{@file}")
 			err.show()
 		end

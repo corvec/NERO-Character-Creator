@@ -47,19 +47,20 @@ class BuildWidget < Qt::Widget
 		skill_list = self.build_skill_list()
 		$log.info "GUI Skill Entry list length: #{skill_list.length}"
 
-		unless ['Line Edit','Text Box','Drop Down','Combo Box'].include? $config.setting('Skill Entry')
-			$log.error "Could not interpret Skill Entry setting (#{$config.setting})."
-			$config.update_setting('Skill Entry','Text Box')
-		end
 		case $config.setting('Skill Entry')
-		when 'Line Edit','Text Box' then
+		when 'Line Edit' then
 			@skill_entry = Qt::LineEdit.new(nil)
 			skill_completer = Qt::Completer.new(skill_list,nil)
 			skill_completer.completionMode= Qt::Completer::UnfilteredPopupCompletion
 			@skill_entry.setCompleter(skill_completer)
-		when 'Drop Down','Combo Box' then
+		when 'Drop Down' then
 			@skill_entry = Qt::ComboBox.new(nil)
 			@skill_entry.add_items skill_list
+		else
+			@skill_entry = Qt::LineEdit.new(nil)
+			skill_completer = Qt::Completer.new(skill_list,nil)
+			skill_completer.completionMode= Qt::Completer::UnfilteredPopupCompletion
+			@skill_entry.setCompleter(skill_completer)
 		end
 		
 		
@@ -116,20 +117,24 @@ class BuildWidget < Qt::Widget
 
 	def add_entered_skill
 		case $config.setting('Skill Entry')
-		when 'Line Edit','Text Box' then
+		when 'Line Edit' then
 			skill_name = @skill_entry.text
-		when 'Drop Down', 'Combo Box' then
+		when 'Drop Down' then
 			skill_name = @skill_entry.current_text
+		else
+			skill_name = @skill_entry.text
 		end
 		if !$character.build.add_skill skill_name, @skill_options_entry.text
 			err = Qt::MessageBox.new(nil,'Error Adding Skill',$character.build.get_add_error())
 			err.show()
 		else
 			case $config.setting('Skill Entry')
-			when 'Line Edit','Text Box' then
+			when 'Line Edit' then
 				@skill_entry.text = ''
-			when 'Drop Down','Combo Box' then
+			when 'Drop Down' then
 				@skill_entry.current_index = 0
+			else
+				@skill_entry.text = ''
 			end
 			@skill_options_entry.text = ''
 			@skill_entry.setFocus()
@@ -138,8 +143,18 @@ class BuildWidget < Qt::Widget
 	end
 
 	def build_skill_list()
-		skill_list = $nero_skills.skill_names
-		skill_list.insert(0,'')
+		skill_list = ['']
+		begin
+			File.open( $data_path + 'skills' ) { |file|
+				while line = file.gets
+					skill_list << line.strip
+				end
+			}
+		rescue
+			$log.error "Skill autocompletion file not found!  Cannot build skill list!"
+			err = Qt::MessageBox.new(nil,'Error Finding File',"Skill autocompletion file not found!  Cannot build skill list!")
+			err.show()
+		end
 		return skill_list
 	end
 

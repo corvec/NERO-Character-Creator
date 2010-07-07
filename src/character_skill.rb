@@ -75,7 +75,7 @@ class Character_Skill
 	# Accounts for the primary school of the character with spells
 	# Accounts for templar profs
 	# Accounts for critical attacks if passed a reference to the character's build
-	def cost class_name = nil, race = nil, primary_school=nil, build=nil
+	def cost class_name = nil, race = nil, primary_school='Earth', build=nil
 		if @character != nil
 			class_name     = @character.character_class.to_s if class_name     == nil
 			race           = @character.race.to_s            if race           == nil
@@ -105,7 +105,6 @@ class Character_Skill
 			elsif @skill.name.match(secondary_school)
 				return @count * cost['Secondary']
 			else
-				$log.error "School of formal magic did not match primary OR secondary"
 				return false
 			end
 		end
