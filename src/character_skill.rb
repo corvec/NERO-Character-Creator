@@ -80,6 +80,7 @@ class Character_Skill
 			class_name     = @character.character_class.to_s if class_name     == nil
 			race           = @character.race.to_s            if race           == nil
 			primary_school = @character.primary              if primary_school == nil
+			secondary_school=@character.secondary            if secondary_school==nil
 			build          = @character.build                if build          == nil
 		end
 
@@ -96,43 +97,92 @@ class Character_Skill
 		if cost.is_a? Integer
 			return @count * cost
 		end
+		# Formal
+		unless @skill.name.match('Formal').nil?
+			$log.info "Character_Skill.cost() Calculating cost of Formal Magic"
+			if @skill.name.match(primary_school)
+				return @count * cost['Primary']
+			elsif @skill.name.match(secondary_school)
+				return @count * cost['Secondary']
+			else
+				return false
+			end
+		end
 		# Prohibited or racial
 		if cost == nil
 			return false
 		end
+
 		# Must be a templar purchasing profs or crit attacks
 		# (or a rogue getting master profs / master crit attacks)
 		# TODO: check build to see if there are profs if this is a crit att
-		if @skill.name.match('Attack')
+		unless @skill.name.match('Attack').nil?
 			set = 0
 			if build != nil
-				if @skill.name.match('Master')
-					set = build.count('Master Proficiency', @options)
+				unless @skill.name.match('Master').nil?
+					set = build.count('Master Proficiency', {}) + build.count('Proficiency',{})
 					set = 2 if set > 2
+					# You cannot buy Master Critical Attacks if you already have normal Proficiencies
+					# I'm allowing it unless it's the same hand
+					if build.count('Proficiency', {'Hand'=>@options['Hand']}) != 0
+						return false
+					end
 				else
-					set = build.count('Proficiency', @options)
+					set = build.count('Proficiency', {}) + build.count('Master Proficiency', {})
 					set = 2 if set > 2
 				end
 			end
 			return @count * cost[set]
 		end
-		# must be a prof:
-		# Note that this implementation assumes that you can have a 
-		# minimum priced first master prof and a minimum priced first prof
-		# This changes in 9th Edition
+		# Must be a prof.
+		# Profs are accounted for in the following order:
+		# Right, Master; Left, Master; Right, Normal; Left, Normal
+		# Technically there's a bug here: a templar purchasing different normal profs in the same hand will pay weird prices
+		# He's saving 2 build over buying a single Master Prof...
+		additional_count = 0
+		unless @skill.name.match('Master') and @options['Hand'] == 'Right'
+			additional_count += build.count('Master Proficiency',{'Hand'=>'Right'})
+			unless @skill.name.match('Master') and @options['Hand'] == 'Left'
+				additional_count += build.count('Master Proficiency',{'Hand'=>'Left'})
+				unless (not @skill.name.match('Master')) and @options['Hand'] == 'Right'
+					additional_count += build.count('Proficiency',{'Hand'=>'Right'})
+					unless (not @skill.name.match('Master')) and @options['Hand'] == 'Left'
+						additional_count += build.count('Proficiency',{'Hand'=>' Left'})
+					end
+				end
+			end
+		end
+
+		# Prevent addition of a normal Prof if you have a Master Crit Attack in that hand
+		unless skill.name.match('Master')
+			if build.count('Master Critical Attack', {'Hand'=>@options['Hand']}) > 0
+				return false
+			end
+		end
+
+		# Use additional count to determine the first cost to apply
+		# Use count to determine the final cost to apply
+		if additional_count >= 2
+			return cost[2]*@count
+		end
+		if additional_count == 1
+			return cost[1] + cost[2]*(@count-1)
+		end
 		if @count >= 3
 			return cost[0] + cost[1] + (cost[2]*(@count-2))
 		end
 		if @count == 2
 			return cost[0] + cost[1]
 		end
+		return cost[0]
+
 		# The following occurs when calculating the cost of a solitary temporary prof
 		if build != nil and @temp
 			if @skill.name.match('Master')
-				set = build.count('Master Proficiency', @options)
+				set = build.count('Master Proficiency', {})
 				set = 2 if set > 2
 			else
-				set = build.count('Proficiency', @options)
+				set = build.count('Proficiency', {})
 				set = 2 if set > 2
 			end
 			return cost[set]

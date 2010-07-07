@@ -234,13 +234,13 @@ public
 		data.each do |exp|
 			case exp['Type']
 			when 'Custom' then
-				self.add_custom(exp['Number'].to_i,exp['Times'].to_i)
+				self.add_custom(exp['Number'].to_f,exp['Times'].to_i)
 			when 'Goblin Blanket' then
 				self.add_goblin_blankets(exp['Date'],exp['Number'].to_i)
 			when 'PC Event' then
-				self.add_pc_event(exp['Site'],exp['Date'],exp['Days'].to_i,exp['Maxout'])
+				self.add_pc_event(exp['Site'],exp['Date'],exp['Days'].to_f,exp['Maxout'])
 			when 'NPC Event' then
-				self.add_npc_event(exp['Site'],exp['Date'],exp['Days'].to_i,exp['Maxout'])
+				self.add_npc_event(exp['Site'],exp['Date'],exp['Days'].to_f,exp['Maxout'])
 			when 'Reset' then
 				hash = {}
 				hash[:experience] = exp['Experience']
