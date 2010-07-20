@@ -295,6 +295,9 @@ class Build
 
 		if char_skill.cost == false
 			@add_error = "You cannot add #{skill.name} because it does not have a cost defined for your character.  It is most likely a racial ability."
+			if char_skill.name.match "Master Critical Attack" or char_skill.name.match 'Proficiency'
+  				@add_error = "You cannot have a Master Critical Attack and a Proficiency in the same hand.  Upgrade your existing skill to a Master Proficiency instead."
+			end
 			$log.warn "Build.add_skill(#{skill.name.inspect}): Cost undefined."
 			return false
 		end
@@ -418,9 +421,9 @@ class Build
 		end
 		included_skills.each do |inc_skill|
 			if includes.is_a? Array
-				self.delete_skill(inc_skill.name, inc_skill.options, inc_skill.count)
+				self.delete_skill(inc_skill.name, options, inc_skill.count)
 			elsif includes.is_a? Hash
-				self.delete_skill(inc_skill.name, inc_skill.options, includes[inc_skill.name])
+				self.delete_skill(inc_skill.name, options, includes[inc_skill.name])
 			end
 		end
 		return true

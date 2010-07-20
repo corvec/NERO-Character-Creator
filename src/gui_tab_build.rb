@@ -41,121 +41,49 @@ class BuildWidget < Qt::Widget
 		skill_frame.frameStyle = Qt::Frame::Raised
 		skill_frame.frameShape = Qt::Frame::StyledPanel
 
+		skill_layout = Qt::GridLayout.new(skill_frame)
+		skill_layout.addWidget(Qt::Label.new('Learn a new Skill:',nil),0,0,1,3)
+
 		skill_list = self.build_skill_list()
 		$log.info "GUI Skill Entry list length: #{skill_list.length}"
 
 		unless ['Line Edit','Text Box','Drop Down','Combo Box'].include? $config.setting('Skill Entry')
 			$log.error "Could not interpret Skill Entry setting (#{$config.setting})."
-			$config.update_setting('Skill Entry','Drop Down')
+			$config.update_setting('Skill Entry','Text Box')
 		end
-
 		case $config.setting('Skill Entry')
 		when 'Line Edit','Text Box' then
-			skill_layout = Qt::GridLayout.new(skill_frame)
-			skill_layout.addWidget(Qt::Label.new('Learn a new Skill:',nil),0,0,1,3)
-
 			@skill_entry = Qt::LineEdit.new(nil)
 			skill_completer = Qt::Completer.new(skill_list,nil)
 			skill_completer.completionMode= Qt::Completer::UnfilteredPopupCompletion
 			@skill_entry.setCompleter(skill_completer)
+		when 'Drop Down','Combo Box' then
+			@skill_entry = Qt::ComboBox.new(nil)
+			@skill_entry.add_items skill_list
+		end
+		
+		
+		skill_layout.addWidget(@skill_entry, 1,0,1,2)
+		skill_layout.addWidget(Qt::Label.new('Note',nil),2,0)
+		@skill_options_entry = Qt::LineEdit.new(nil)
+		skill_layout.addWidget(@skill_options_entry,2,1)
+		skill_entry_button = Qt::PushButton.new('Add',nil)
 
-			skill_layout.addWidget(@skill_entry, 1,0,1,2)
-			skill_layout.addWidget(Qt::Label.new('Note',nil),2,0)
-			@skill_options_entry = Qt::LineEdit.new(nil)
-			skill_layout.addWidget(@skill_options_entry,2,1)
-			skill_entry_button = Qt::PushButton.new('Add',nil)
-
+		if $config.setting('Skill Entry') != 'Drop Down'
 			@skill_entry.connect(SIGNAL(:returnPressed)) {
 				self.add_entered_skill()
 			}
-
-			skill_entry_button.connect(SIGNAL(:clicked)) {
-				self.add_entered_skill()
-			}
-
-			@skill_options_entry.connect(SIGNAL(:returnPressed)) {
-				self.add_entered_skill()
-			}
-			skill_layout.addWidget(skill_entry_button, 1,2,2,1)
-
-			add_skill_layout.addWidget(skill_frame,0,0)
-		when 'Drop Down','Combo Box' then
-			skill_entry_layout = Qt::VBoxLayout.new(skill_frame)
-
-			skill_options_frame = Qt::Frame.new(self)
-			skill_options_layout = Qt::HBoxLayout.new(skill_options_frame)
-
-			spacer_label = Qt::Label.new(' ',nil)
-			skill_options_layout.addWidget(spacer_label)
-
-			option_widgets = [spacer_label] # So they can easily be removed
-			@option_entries = {} # To lookup, so they can be stored
-
-			@skill_entry = Qt::ComboBox.new(nil)
-			@skill_entry.add_items skill_list
-
-			@skill_entry.connect(SIGNAL('currentIndexChanged(int)')) {
-				skill = $nero_skills.lookup(@skill_entry.current_text)
-
-				option_widgets.each do |o_widget|
-					o_widget.hide
-					skill_options_layout.removeWidget(o_widget)
-				end
-				option_widgets.clear
-				@option_entries.clear
-
-				if skill.nil?
-					skill_entry_button.enabled = false
-					spacer_label = Qt::Label.new(' ',nil)
-					option_widgets << spacer_label
-					skill_options_layout.addWidget(spacer_label)
-				elsif skill.options.length == 0
-					skill_entry_button.enabled = true
-					spacer_label = Qt::Label.new(' ',nil)
-					option_widgets << spacer_label
-					skill_options_layout.addWidget(spacer_label)
-				else
-					skill_entry_button.enabled = true
-					skill.options.each do |o|
-						o_label = Qt::Label.new(o,nil)
-						#If this has a specific set of entries
-						valid_values = $character.build.valid_option_values(o)
-						if valid_values.nil?
-							o_entry = Qt::LineEdit.new(nil)
-						else
-							o_entry = Qt::ComboBox.new(nil)
-							o_entry.add_items valid_values
-						end
-
-						option_widgets << o_label
-						option_widgets << o_entry
-
-						@option_entries[o] = o_entry
-
-						skill_options_layout.addWidget(o_label)
-						skill_options_layout.addWidget(o_entry)
-					end
-					option_widgets[1].setFocus
-				end
-				skill_options_frame.updateGeometry()
-				skill_options_frame.repaint()
-			}
-
-			skill_entry_button = Qt::PushButton.new('Add',nil)
-			skill_entry_button.default = true
-			skill_entry_button.enabled = false
-
-			skill_entry_button.connect(SIGNAL(:clicked)) {
-				self.add_entered_skill()
-			}
-
-			skill_entry_layout.addWidget(Qt::Label.new('Learn a new Skill:',nil))
-			skill_entry_layout.addWidget(@skill_entry)
-			skill_entry_layout.addWidget(skill_options_frame)
-			skill_entry_layout.addWidget(skill_entry_button)
-
-			add_skill_layout.addWidget(skill_frame,0,0)
 		end
+
+		skill_entry_button.connect(SIGNAL(:clicked)) {
+			self.add_entered_skill()
+		}
+		@skill_options_entry.connect(SIGNAL(:returnPressed)) {
+			self.add_entered_skill()
+		}
+		skill_layout.addWidget(skill_entry_button, 1,2,2,1)
+
+		add_skill_layout.addWidget(skill_frame,0,0)
 
 		# Spell Trees
 		primary_tree_frame = Qt::Frame.new(self)
@@ -190,18 +118,11 @@ class BuildWidget < Qt::Widget
 		case $config.setting('Skill Entry')
 		when 'Line Edit','Text Box' then
 			skill_name = @skill_entry.text
-			options = @skill_options_entry.text
-			@skill_options_entry.text = ''
 		when 'Drop Down', 'Combo Box' then
 			skill_name = @skill_entry.current_text
-			options = {}
-			@option_entries.each do |o,entry|
-				options[o] = entry.text if entry.is_a? Qt::LineEdit
-				options[o] = entry.current_text if entry.is_a? Qt::ComboBox
-			end
 		end
-		if !$character.build.add_skill skill_name, options
-			err = Qt::MessageBox.new(nil,'Error Adding Skill',$character.build.add_error)
+		if !$character.build.add_skill skill_name, @skill_options_entry.text
+			err = Qt::MessageBox.new(nil,'Error Adding Skill',$character.build.get_add_error())
 			err.show()
 		else
 			case $config.setting('Skill Entry')
@@ -210,9 +131,10 @@ class BuildWidget < Qt::Widget
 			when 'Drop Down','Combo Box' then
 				@skill_entry.current_index = 0
 			end
+			@skill_options_entry.text = ''
 			@skill_entry.setFocus()
 		end
-		self.commit()
+		self.commit() if $character.build.commit?
 	end
 
 	def build_skill_list()
@@ -295,7 +217,7 @@ class SkillsWidget < Qt::ScrollArea
 
 				skill_count_inc.connect(SIGNAL(:clicked)) {
 					unless $character.build.add_skill(skill.skill,skill.options)
-						err = Qt::MessageBox.new(nil,'Error Incrementing Skill',$character.build.add_error)
+						err = Qt::MessageBox.new(nil,'Error Incrementing Skill',$character.build.get_add_error())
 						err.show()
 					end
 					if $character.build.commit?
@@ -366,7 +288,7 @@ class SpellTreeLayout < Qt::GridLayout
 			@tree[i].setMaxLength(2)
 			@tree[i].setAlignment Qt::AlignHCenter
 			@tree[i].readOnly = true
-			@tree[i].toolTip = "Cost: #{@base_cost * $character.build.spell_cost(i)}"
+			@tree[i].toolTip = "Cost: #{@base_cost * spell_cost(i)}"
 			self.addWidget(@tree[i],1,i+(i/3),Qt::AlignCenter)
 
 			@plus[i] = Qt::PushButton.new('+',nil)
@@ -404,17 +326,64 @@ private
 		return @tree[i].text.to_i
 	end
 
-public
-	def increment level
-		unless $character.build.increment_spell_slots(self.school(),level)
-			err = Qt::MessageBox.new(nil,'Error Adding Spell',$character.build.add_error)
-			err.show()
-		end
-		self.commit
+	def set_spells_at i, val
+		return if val < 0
+		@tree[i].text= val.to_s
 	end
 
-	def decrement level
-		$character.build.decrement_spell_slots(self.school(),level)
+	def enforce_legality static
+		# First traverse down in number:
+		(static - 1).downto(0) do |i|
+		#(0 .. (static - 1)).each do |j|
+      #i = (static - 1) - j
+			# turning 44 into 45 -> 55
+			if spells_at(i) < spells_at(i+1)
+				set_spells_at(i, spells_at(i+1))
+			end
+			if spells_at(i) < 4 and spells_at(i) == spells_at(i+1)
+				set_spells_at(i, spells_at(i)+1)
+			end
+			if spells_at(i) <= 4 and spells_at(i) > spells_at(i+1)+2
+				set_spells_at(i, spells_at(i)-1)
+			end
+			if spells_at(i) > 4 and spells_at(i) > spells_at(i+1)+1
+				set_spells_at(i, spells_at(i)-1)
+			end
+		end
+		(static + 1).upto(8) do |i|
+			if spells_at(i-1) < spells_at(i)
+				set_spells_at(i, spells_at(i-1))
+			end
+			if spells_at(i-1) < 4 and spells_at(i-1) == spells_at(i)
+				set_spells_at(i, spells_at(i)-1)
+			end
+			if spells_at(i-1) <= 4 and spells_at(i-1) > spells_at(i) + 2
+				set_spells_at(i, spells_at(i-1)-2)
+			end
+			if spells_at(i-1) > 4 and spells_at(i-1) > spells_at(i) + 1
+				set_spells_at(i,spells_at(i-1)-1)
+			end
+		end
+
+	end
+
+public
+	def increment i
+		if self.can_add_spells()
+			set_spells_at(i, spells_at(i) + 1)
+			enforce_legality(i)
+			enforce_legality(i)
+			self.commit()
+		else
+			$log.error 'Cannot add spell: Missing some prerequisite.'
+			err = Qt::MessageBox.new(nil,'Error Adding Spell','Cannot add spell: Missing some prerequisite.')
+			err.show()
+		end
+	end
+
+	def decrement i
+		set_spells_at(i, spells_at(i) - 1)
+		enforce_legality(i)
 		self.commit()
 	end
 
@@ -441,14 +410,26 @@ public
 
 	def commit
 		school = self.school()
-		$tabs.each do |tab|
-			tab.update
+		unless $character.build.set_tree school, self.tree
+			self.update
+			err = Qt::MessageBox.new(nil,'Error Adding Spell',$character.build.get_add_error())
+			err.show()
+		else
+			$tabs.each do |tab|
+				tab.update
+			end
 		end
+	end
+
+	def tree
+		result = []
+		(0..8).each { |i| result << spells_at(i) }
+		return result
 	end
 
 	def change_cost_tooltips
 		(0..8).each do |i|
-			@tree[i].toolTip = "Cost: #{@base_cost * $character.build.spell_cost(i)}"
+			@tree[i].toolTip = "Cost: #{@base_cost * spell_cost(i)}"
 		end
 	end
 
@@ -456,7 +437,40 @@ public
 	# Basically this is meant to be added to the build total
 	# if this is a secondary tree
 	def tree_cost
-		return $character.build.tree_cost(self.school())
+		cost = 0
+		(0..8).each do |i|
+			cost += self.spell_cost(i)*@tree[i].text.to_i
+		end
+		cost *= 2 if @tree_type != 'Primary'
+		return cost
 	end
 
+	# Returns true if the character has the proper skills needed
+	# to add spells.
+	def can_add_spells
+		skill = $nero_skills.lookup( "#{self.school()} 1" )
+		cskill= Character_Skill.new(skill, {}, 1, $character)
+
+		return cskill.meets_prerequisites?
+	end
+
+	
+	def spell_cost i
+		case $character.character_class.name
+		when 'Scholar'
+			return scholar_cost(i)
+		when 'Templar'
+			return (i * 2/3) + 1
+		when 'Fighter'
+			return scholar_cost(i)*3
+		when 'Rogue'
+			return 2 * scholar_cost(i)
+		else
+			return scholar_cost(i)
+		end
+	end
+
+	def scholar_cost i
+		return (i * 1/2) + 1
+	end
 end
