@@ -13,14 +13,21 @@ class NERO_Config
 		end
 		@default_config = {}
 		@default_config['Log Output'] = Dir.pwd + '/nero.log'
-		@default_config['Log Count'] = 20
-		@default_config['Log Size'] = 102400
+		@default_config['Log Count'] = 1
+		@default_config['Log Size'] = 1024000
 		@default_config['Skill Count Min Width'] = 10
 		@default_config['Skill Count Max Width'] = 20
 		@default_config['Skill Count Min Height'] = 10
 		@default_config['Skill Count Max Height'] = 20
 		@default_config['Skill Entry'] = 'Drop Down' # Other choice: Line Edit
 		@default_config['Title'] = 'NERO Character Creator'
+		@default_config['Skill Data'] = 'skills.yml'
+		@default_config['Working Directory'] = Dir.pwd()
+		@default_config['Goblins'] = 'Individual'
+		@default_config['Autosave'] = 'ncc.yml'
+		@default_config['Export'] = "#{ENV['USERPROFILE']}/Desktop"
+		@default_config['Race Entry'] = 'Drop Down'
+		@default_config['Class Entry'] = 'Drop Down'
 
 		@default_config['Enforce Build'] = false
 
@@ -41,21 +48,23 @@ class NERO_Config
 	end
 
 	def chdir
-		$log.debug 'Changing default directory...'
+		$log.debug 'NERO_Config.chdir()'
 		begin
-			if $config.setting('Save Directory').upcase != 'PROGRAM'
-				Dir.chdir(ENV['USERPROFILE'])
-				if RUBY_PLATFORM.include?('win32') or RUBY_PLATFORM.include?('i386-mingw32')
-					$log.debug "Platform is Windows, changing directory to #{Dir::PERSONAL}"
-					Dir.chdir(Dir::PERSONAL)
-				end
-				unless $config.setting('Save Directory').nil?
+			$log.debug "NERO_Config.chdir() - 'Save Directory' == #{self.setting('Save Directory')}"
+			if self.setting('Save Directory').to_s.upcase != 'PROGRAM'
+				if self.setting('Save Directory').nil?
+					Dir.chdir(ENV['USERPROFILE'])
+					if RUBY_PLATFORM.include?('win32') or RUBY_PLATFORM.include?('i386-mingw32')
+						$log.debug "Platform is Windows, changing to Personal directory"
+						Dir.chdir(Dir::PERSONAL)
+					end
+				else
 					Dir.chdir($config.setting)
-					$log.debug "'Save Directory' variable set, changing directory to #{$config.setting}"
+					$log.debug "NERO_Config.chdir() - 'Save Directory' variable set, changed directory to #{$config.setting}"
 				end
 			end
 		rescue
-			$log.error "Failed to set documents directory..."
+			$log.error "NERO_Config.chdir() - Failed to set documents directory..."
 		end
 	end
 

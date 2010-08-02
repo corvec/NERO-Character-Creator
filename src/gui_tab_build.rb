@@ -41,50 +41,120 @@ class BuildWidget < Qt::Widget
 		skill_frame.frameStyle = Qt::Frame::Raised
 		skill_frame.frameShape = Qt::Frame::StyledPanel
 
-		skill_layout = Qt::GridLayout.new(skill_frame)
-		skill_layout.addWidget(Qt::Label.new('Learn a new Skill:',nil),0,0,1,3)
-
 		skill_list = self.build_skill_list()
 		$log.info "GUI Skill Entry list length: #{skill_list.length}"
 
-		case $config.setting('Skill Entry')
-		when 'Line Edit' then
-			@skill_entry = Qt::LineEdit.new(nil)
-			skill_completer = Qt::Completer.new(skill_list,nil)
-			skill_completer.completionMode= Qt::Completer::UnfilteredPopupCompletion
-			@skill_entry.setCompleter(skill_completer)
-		when 'Drop Down' then
-			@skill_entry = Qt::ComboBox.new(nil)
-			@skill_entry.add_items skill_list
-		else
-			@skill_entry = Qt::LineEdit.new(nil)
-			skill_completer = Qt::Completer.new(skill_list,nil)
-			skill_completer.completionMode= Qt::Completer::UnfilteredPopupCompletion
-			@skill_entry.setCompleter(skill_completer)
+		unless ['Line Edit','Text Box','Drop Down','Combo Box'].include? $config.setting('Skill Entry')
+			$log.error "Could not interpret Skill Entry setting (#{$config.setting})."
+			$config.update_setting('Skill Entry','Drop Down')
 		end
-		
-		
-		skill_layout.addWidget(@skill_entry, 1,0,1,2)
-		skill_layout.addWidget(Qt::Label.new('Note',nil),2,0)
-		@skill_options_entry = Qt::LineEdit.new(nil)
-		skill_layout.addWidget(@skill_options_entry,2,1)
-		skill_entry_button = Qt::PushButton.new('Add',nil)
 
-		if $config.setting('Skill Entry') != 'Drop Down'
+		case $config.setting('Skill Entry')
+		when 'Line Edit','Text Box' then
+			skill_layout = Qt::GridLayout.new(skill_frame)
+			skill_layout.addWidget(Qt::Label.new('Learn a new Skill:',nil),0,0,1,3)
+
+			@skill_entry = Qt::LineEdit.new(nil)
+			skill_completer = Qt::Completer.new(skill_list,nil)
+			skill_completer.completionMode= Qt::Completer::UnfilteredPopupCompletion
+			@skill_entry.setCompleter(skill_completer)
+
+			skill_layout.addWidget(@skill_entry, 1,0,1,2)
+			skill_layout.addWidget(Qt::Label.new('Note',nil),2,0)
+			@skill_options_entry = Qt::LineEdit.new(nil)
+			skill_layout.addWidget(@skill_options_entry,2,1)
+			skill_entry_button = Qt::PushButton.new('Add',nil)
+
 			@skill_entry.connect(SIGNAL(:returnPressed)) {
 				self.add_entered_skill()
 			}
+
+			skill_entry_button.connect(SIGNAL(:clicked)) {
+				self.add_entered_skill()
+			}
+
+			@skill_options_entry.connect(SIGNAL(:returnPressed)) {
+				self.add_entered_skill()
+			}
+			skill_layout.addWidget(skill_entry_button, 1,2,2,1)
+
+			add_skill_layout.addWidget(skill_frame,0,0)
+		when 'Drop Down','Combo Box' then
+			skill_entry_layout = Qt::VBoxLayout.new(skill_frame)
+
+			skill_options_frame = Qt::Frame.new(self)
+			skill_options_layout = Qt::HBoxLayout.new(skill_options_frame)
+
+			spacer_label = Qt::Label.new(' ',nil)
+			skill_options_layout.addWidget(spacer_label)
+
+			option_widgets = [spacer_label] # So they can easily be removed
+			@option_entries = {} # To lookup, so they can be stored
+
+			@skill_entry = Qt::ComboBox.new(nil)
+			@skill_entry.add_items skill_list
+
+			@skill_entry.connect(SIGNAL('currentIndexChanged(int)')) {
+				skill = $nero_skills.lookup(@skill_entry.current_text)
+
+				option_widgets.each do |o_widget|
+					o_widget.hide
+					skill_options_layout.removeWidget(o_widget)
+				end
+				option_widgets.clear
+				@option_entries.clear
+
+				if skill.nil?
+					skill_entry_button.enabled = false
+					spacer_label = Qt::Label.new(' ',nil)
+					option_widgets << spacer_label
+					skill_options_layout.addWidget(spacer_label)
+				elsif skill.options.length == 0
+					skill_entry_button.enabled = true
+					spacer_label = Qt::Label.new(' ',nil)
+					option_widgets << spacer_label
+					skill_options_layout.addWidget(spacer_label)
+				else
+					skill_entry_button.enabled = true
+					skill.options.each do |o|
+						o_label = Qt::Label.new(o,nil)
+						#If this has a specific set of entries
+						valid_values = $character.build.valid_option_values(o)
+						if valid_values.nil?
+							o_entry = Qt::LineEdit.new(nil)
+						else
+							o_entry = Qt::ComboBox.new(nil)
+							o_entry.add_items valid_values
+						end
+
+						option_widgets << o_label
+						option_widgets << o_entry
+
+						@option_entries[o] = o_entry
+
+						skill_options_layout.addWidget(o_label)
+						skill_options_layout.addWidget(o_entry)
+					end
+				end
+				skill_options_frame.updateGeometry()
+				skill_options_frame.repaint()
+			}
+
+			skill_entry_button = Qt::PushButton.new('Add',nil)
+			skill_entry_button.default = true
+			skill_entry_button.enabled = false
+
+			skill_entry_button.connect(SIGNAL(:clicked)) {
+				self.add_entered_skill()
+			}
+
+			skill_entry_layout.addWidget(Qt::Label.new('Learn a new Skill:',nil))
+			skill_entry_layout.addWidget(@skill_entry)
+			skill_entry_layout.addWidget(skill_options_frame)
+			skill_entry_layout.addWidget(skill_entry_button)
+
+			add_skill_layout.addWidget(skill_frame,0,0)
 		end
-
-		skill_entry_button.connect(SIGNAL(:clicked)) {
-			self.add_entered_skill()
-		}
-		@skill_options_entry.connect(SIGNAL(:returnPressed)) {
-			self.add_entered_skill()
-		}
-		skill_layout.addWidget(skill_entry_button, 1,2,2,1)
-
-		add_skill_layout.addWidget(skill_frame,0,0)
 
 		# Spell Trees
 		primary_tree_frame = Qt::Frame.new(self)
@@ -117,44 +187,36 @@ class BuildWidget < Qt::Widget
 
 	def add_entered_skill
 		case $config.setting('Skill Entry')
-		when 'Line Edit' then
+		when 'Line Edit','Text Box' then
 			skill_name = @skill_entry.text
-		when 'Drop Down' then
+			options = @skill_options_entry.text
+			@skill_options_entry.text = ''
+		when 'Drop Down', 'Combo Box' then
 			skill_name = @skill_entry.current_text
-		else
-			skill_name = @skill_entry.text
+			options = {}
+			@option_entries.each do |o,entry|
+				options[o] = entry.text if entry.is_a? Qt::LineEdit
+				options[o] = entry.current_text if entry.is_a? Qt::ComboBox
+			end
 		end
-		if !$character.build.add_skill skill_name, @skill_options_entry.text
+		if !$character.build.add_skill skill_name, options
 			err = Qt::MessageBox.new(nil,'Error Adding Skill',$character.build.get_add_error())
 			err.show()
 		else
 			case $config.setting('Skill Entry')
-			when 'Line Edit' then
+			when 'Line Edit','Text Box' then
 				@skill_entry.text = ''
-			when 'Drop Down' then
+			when 'Drop Down','Combo Box' then
 				@skill_entry.current_index = 0
-			else
-				@skill_entry.text = ''
 			end
-			@skill_options_entry.text = ''
 			@skill_entry.setFocus()
 		end
-		self.commit() if $character.build.commit?
+		self.commit()
 	end
 
 	def build_skill_list()
-		skill_list = ['']
-		begin
-			File.open( $data_path + 'skills' ) { |file|
-				while line = file.gets
-					skill_list << line.strip
-				end
-			}
-		rescue
-			$log.error "Skill autocompletion file not found!  Cannot build skill list!"
-			err = Qt::MessageBox.new(nil,'Error Finding File',"Skill autocompletion file not found!  Cannot build skill list!")
-			err.show()
-		end
+		skill_list = $nero_skills.skill_names
+		skill_list.insert(0,'')
 		return skill_list
 	end
 

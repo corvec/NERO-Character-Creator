@@ -28,6 +28,8 @@ Archery:
       Rogue: 10
       Scholar: 15
       Templar: 12
+   Includes:
+      - Weapon
 Assassinate/Dodge:
    Max: 0
    Requires:
@@ -72,6 +74,7 @@ Celestial 1:
    Max: 0
    Requires:
       - Read Magic
+   Invisible: True
    Cost:
       Fighter: 3
       Rogue: 2
@@ -81,6 +84,7 @@ Celestial 2:
    Max: 0
    Requires:
       - Celestial 1
+   Invisible: True
    Cost:
       Fighter: 3
       Rogue: 2
@@ -90,6 +94,7 @@ Celestial 3:
    Max: 0
    Requires:
       - Celestial 2
+   Invisible: True
    Cost:
       Fighter: 6
       Rogue: 4
@@ -99,6 +104,7 @@ Celestial 4:
    Max: 0
    Requires:
       - Celestial 3
+   Invisible: True
    Cost:
       Fighter: 6
       Rogue: 4
@@ -108,6 +114,7 @@ Celestial 5:
    Max: 0
    Requires:
       - Celestial 4
+   Invisible: True
    Cost:
       Fighter: 9
       Rogue: 6
@@ -117,6 +124,7 @@ Celestial 6:
    Max: 0
    Requires:
       - Celestial 5
+   Invisible: True
    Cost:
       Fighter: 9
       Rogue: 6
@@ -126,6 +134,7 @@ Celestial 7:
    Max: 0
    Requires:
       - Celestial 6
+   Invisible: True
    Cost:
       Fighter: 12
       Rogue: 8
@@ -135,6 +144,7 @@ Celestial 8:
    Max: 0
    Requires:
       - Celestial 7
+   Invisible: True
    Cost:
       Fighter: 12
       Rogue: 8
@@ -144,17 +154,12 @@ Celestial 9:
    Max: 0
    Requires:
       - Celestial 8
+   Invisible: True
    Cost:
       Fighter: 15
       Rogue: 10
       Scholar: 5
       Templar: 6
-Commune with Nature:
-   Cost:
-      Fighter: 6
-      Rogue: 6
-      Scholar: 3
-      Templar: 3
 Craftsman Other:
    Max: 0
    Options:
@@ -168,14 +173,6 @@ Craftsman Other:
 Create Potion:
    Requires:
       - Earth 4
-   Cost:
-      Fighter: 6
-      Rogue: 5
-      Scholar: 3
-      Templar: 4
-Create Runes:
-   Requires:
-      - Nature 1
    Cost:
       Fighter: 6
       Rogue: 5
@@ -202,6 +199,9 @@ Critical Attack:
    Max: 4
    Requires:
       - Weapon
+   Options:
+      - Hand
+      - Weapon
    Cost:
       Fighter: 3
       Rogue: 4
@@ -223,9 +223,6 @@ Detect Celestial Magic:
    Max: 0
    Cost:
       Barbarian: 2
-Dexterity Armor:
-   Max: 5
-   Cost: 3
 "Disarm/Arm Trap":
    Cost:
       Fighter: 9
@@ -236,6 +233,7 @@ Earth 1:
    Max: 0
    Requires:
       - Healing Arts
+   Invisible: True
    Cost:
       Fighter: 3
       Rogue: 2
@@ -245,6 +243,7 @@ Earth 2:
    Max: 0
    Requires:
       - Earth 1
+   Invisible: True
    Cost:
       Fighter: 3
       Rogue: 2
@@ -254,6 +253,7 @@ Earth 3:
    Max: 0
    Requires:
       - Earth 2
+   Invisible: True
    Cost:
       Fighter: 6
       Rogue: 4
@@ -263,6 +263,7 @@ Earth 4:
    Max: 0
    Requires:
       - Earth 3
+   Invisible: True
    Cost:
       Fighter: 6
       Rogue: 4
@@ -272,6 +273,7 @@ Earth 5:
    Max: 0
    Requires:
       - Earth 4
+   Invisible: True
    Cost:
       Fighter: 9
       Rogue: 6
@@ -281,6 +283,7 @@ Earth 6:
    Max: 0
    Requires:
       - Earth 5
+   Invisible: True
    Cost:
       Fighter: 9
       Rogue: 6
@@ -290,6 +293,7 @@ Earth 7:
    Max: 0
    Requires:
       - Earth 6
+   Invisible: True
    Cost:
       Fighter: 12
       Rogue: 8
@@ -299,6 +303,7 @@ Earth 8:
    Max: 0
    Requires:
       - Earth 7
+   Invisible: True
    Cost:
       Fighter: 12
       Rogue: 8
@@ -308,6 +313,7 @@ Earth 9:
    Max: 0
    Requires:
       - Earth 8
+   Invisible: True
    Cost:
       Fighter: 15
       Rogue: 10
@@ -367,23 +373,6 @@ Florentine:
       Templar:
         Primary: 4
         Secondary: 8
-"Formal Magic (Nature)":
-   Max: 0
-   Requires:
-      - Nature 9
-   Cost:
-      Fighter:
-        Primary: 12
-        Secondary: 24
-      Rogue:
-        Primary: 8
-        Secondary: 16
-      Scholar:
-        Primary: 4
-        Secondary: 8
-      Templar:
-        Primary: 4
-        Secondary: 8
 "Gypsy Curse/Remove Gypsy Curse":
    Max: 0
    Cost:
@@ -405,17 +394,6 @@ Herbal Lore:
       Rogue: 3
       Scholar: 4
       Templar: 5
-Hobling Dodge:
-   Cost:
-      Hobling: 10
-Manifold:
-   Requires:
-      - Prepare Hearth
-   Cost:
-      Fighter: 9
-      Rogue: 6
-      Scholar: 3
-      Templar: 4
 Master Critical Attack:
    Max: 4
    Requires:
@@ -452,87 +430,6 @@ Master Proficiency:
       Rogue: [23, 24, 32]
       Scholar: 44
       Templar: [23, 24, 32]
-Nature 1:
-   Max: 0
-   Requires:
-      - Runes of Nature
-   Cost:
-      Fighter: 3
-      Rogue: 2
-      Scholar: 1
-      Templar: 1
-Nature 2:
-   Max: 0
-   Requires:
-      - Nature 1
-   Cost:
-      Fighter: 3
-      Rogue: 2
-      Scholar: 1
-      Templar: 1
-Nature 3:
-   Max: 0
-   Requires:
-      - Nature 2
-   Cost:
-      Fighter: 6
-      Rogue: 4
-      Scholar: 2
-      Templar: 2
-Nature 4:
-   Max: 0
-   Requires:
-      - Nature 3
-   Cost:
-      Fighter: 6
-      Rogue: 4
-      Scholar: 2
-      Templar: 3
-Nature 5:
-   Max: 0
-   Requires:
-      - Nature 4
-   Cost:
-      Fighter: 9
-      Rogue: 6
-      Scholar: 3
-      Templar: 3
-Nature 6:
-   Max: 0
-   Requires:
-      - Nature 5
-   Cost:
-      Fighter: 9
-      Rogue: 6
-      Scholar: 3
-      Templar: 4
-Nature 7:
-   Max: 0
-   Requires:
-      - Nature 6
-   Cost:
-      Fighter: 12
-      Rogue: 8
-      Scholar: 4
-      Templar: 5
-Nature 8:
-   Max: 0
-   Requires:
-      - Nature 7
-   Cost:
-      Fighter: 12
-      Rogue: 8
-      Scholar: 4
-      Templar: 5
-Nature 9:
-   Max: 0
-   Requires:
-      - Nature 8
-   Cost:
-      Fighter: 15
-      Rogue: 10
-      Scholar: 5
-      Templar: 6
 One Handed Blunt:
    Includes:
       - Weapon
@@ -573,12 +470,6 @@ Polearm:
       Rogue: 10
       Scholar: 12
       Templar: 10
-Prepare Hearth:
-   Cost:
-      Fighter: 6
-      Rogue: 4
-      Scholar: 2
-      Templar: 3
 Proficiency:
    Includes:
       Critical Attack: 4
@@ -635,14 +526,6 @@ Resist Sleep:
       Biata: 2
       Drae: 2
       Elf: 2
-Runes of Nature:
-   Requires:
-      - Commune with Nature
-   Cost:
-      Fighter: 8
-      Rogue: 6
-      Scholar: 4
-      Templar: 4
 Shield:
    Includes:
       - Weapon
@@ -655,29 +538,10 @@ Small Weapon:
    Includes:
       - Weapon
    Cost: 2
-Smithing:
-   Max: 0
-   Includes:
-      - [Armorsmith]
-      - [Weaponsmith]
-   Cost:
-      Dwarf Fighter: 2
-      Dwarf Rogue: 3
-      Dwarf Scholar: 3
-      Dwarf Templar: 2
-      Fighter: 3
-      Rogue: 4
-      Scholar: 4
-      Templar: 3
 Staff:
    Includes:
       - Weapon
    Cost: 4
-Stop Thrust:
-   Cost: 2
-Strongarm:
-   Cost:
-      Half Orc: 10
 Style Master:
    Includes:
       - Florentine
@@ -719,14 +583,6 @@ Two Handed Weapon Master:
       Rogue: 14
       Scholar: 18
       Templar: 14
-Two Long Weapons:
-  Requires:
-      - Two Weapons
-  Cost:
-      Fighter: 2
-      Rogue: 4
-      Scholar: 6
-      Templar: 4
 Two Weapons:
    Requires:
       - Florentine
@@ -741,13 +597,6 @@ Waylay:
       Rogue: 6
       Scholar: 12
       Templar: 12
-Waylay 9:
-   Max: 0
-   Cost:
-      Fighter: 6
-      Rogue: 3
-      Scholar: 6
-      Templar: 6
 Weapon Master:
    Includes:
       - One Handed Weapon Master
@@ -759,9 +608,6 @@ Weapon Master:
       Templar: 18
 Weaponsmith:
    Max: 0
-   Includes:
-      - [Armorsmith]
-      - [Weaponsmith]
    Cost:
       Dwarf Fighter: 2
       Dwarf Rogue: 3

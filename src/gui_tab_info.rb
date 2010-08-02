@@ -36,32 +36,67 @@ class InfoWidget < Qt::Widget
 			temp_date = @creation_entry.date
 			$character.date_created= Date.new(temp_date.year,temp_date.month,temp_date.day)
 		}
-		@race_entry = Qt::LineEdit.new(nil)
-		race_list = %w(Barbarian Biata Drae Dwarf Elf Gypsy Half\ Ogre Half\ Orc Hobling Human Mystic\ Wood\ Elf Sarr Scavenger)
-		race_completer = Qt::Completer.new(race_list,nil)
-		race_completer.completionMode= Qt::Completer::InlineCompletion
-		@race_entry.setCompleter(race_completer)
-		@race_entry.connect(SIGNAL(:editingFinished)) {
-			$character.race = @race_entry.text
-			@race_entry.text= $character.race.to_s
-			self.commit()
-		}
+
+		@race_list = %w(Barbarian Biata Drae Dwarf Elf Gypsy Half\ Ogre Half\ Orc Hobling Human Mystic\ Wood\ Elf Sarr Scavenger)
+		unless ['Line Edit','Text Box','Drop Down','Combo Box'].include? $config.setting('Race Entry')
+			$log.error "Could not interpret Race Entry setting (#{$config.setting})."
+			$config.update_setting('Race Entry','Text Box')
+		end
+		case $config.setting 'Race Entry'
+		when 'Line Edit','Text Box' then
+			@race_entry = Qt::LineEdit.new(nil)
+			race_completer = Qt::Completer.new(@race_list,nil)
+			race_completer.completionMode= Qt::Completer::InlineCompletion
+			@race_entry.setCompleter(race_completer)
+			@race_entry.connect(SIGNAL(:editingFinished)) {
+				commit_need = $character.race.to_s != @race_entry.text
+				$character.race = @race_entry.text
+				@race_entry.text= $character.race.to_s
+				self.commit() if commit_need
+			}
+		when 'Drop Down','Combo Box' then
+			@race_entry = Qt::ComboBox.new(nil)
+			@race_entry.add_items(@race_list)
+			@race_entry.connect(SIGNAL('currentIndexChanged(int)')) {
+				commit_need = $character.race.to_s != @race_entry.currentText
+				$character.race = @race_entry.currentText
+				@race_entry.current_index = @race_list.index($character.race.to_s)
+				self.commit() if commit_need
+			}
+		end
 
 		@subrace_entry = Qt::LineEdit.new(nil)
 		@subrace_entry.connect(SIGNAL(:editingFinished)) {
 			$character.subrace = @subrace_entry.text
 		}
 
-		@class_entry = Qt::LineEdit.new(nil)
-		class_list = %w(Fighter Rogue Scholar Templar)
-		class_completer = Qt::Completer.new(class_list,nil)
-		class_completer.completionMode = Qt::Completer::InlineCompletion#UnfilteredPopupCompletion
-		@class_entry.setCompleter(class_completer)
-		@class_entry.connect(SIGNAL(:editingFinished)) {
-			$character.character_class = @class_entry.text
-			@class_entry.text = $character.character_class.name
-			self.commit()
-		}
+		@class_list = %w(Fighter Rogue Scholar Templar)
+		unless ['Line Edit','Text Box','Drop Down','Combo Box'].include? $config.setting('Class Entry')
+			$log.error "Could not interpret Class Entry setting (#{$config.setting})."
+			$config.update_setting('Class Entry','Text Box')
+		end
+		case $config.setting 'Class Entry'
+		when 'Line Edit','Text Box' then
+			@class_entry = Qt::LineEdit.new(nil)
+			class_completer = Qt::Completer.new(@class_list,nil)
+			class_completer.completionMode = Qt::Completer::InlineCompletion#UnfilteredPopupCompletion
+			@class_entry.setCompleter(class_completer)
+			@class_entry.connect(SIGNAL(:editingFinished)) {
+				commit_need = $character.character_class.to_s != @class_entry.text
+				$character.character_class = @class_entry.text
+				@class_entry.text = $character.character_class.to_s
+				self.commit() if commit_need
+			}
+		when 'Drop Down','Combo Box' then
+			@class_entry = Qt::ComboBox.new(nil)
+			@class_entry.add_items @class_list
+			@class_entry.connect(SIGNAL('currentIndexChanged(int)')) {
+				commit_need = $character.character_class.to_s != @class_entry.currentText
+				$character.character_class = @class_entry.currentText
+				@class_entry.current_index = @class_list.index($character.character_class.to_s)
+				self.commit() if commit_need
+			}
+		end
 
 		@primary_school_entry = Qt::LineEdit.new(nil)
 		school_list = %w(Earth Celestial Nature)
@@ -71,7 +106,7 @@ class InfoWidget < Qt::Widget
 		@primary_school_entry.connect(SIGNAL(:editingFinished)) {
 			school_init = @primary_school_entry.text[0..0]
 			if %w(E C N).include? school_init
-				$character.primary = %w(Earth Celestial Nature)[ %w(E C N).index(school_init) ]
+				$character.primary = school_list[ %w(E C N).index(school_init) ]
 			end
 			@primary_school_entry.text = $character.primary
 			@secondary_school_entry.text = $character.secondary
@@ -82,7 +117,7 @@ class InfoWidget < Qt::Widget
 		@secondary_school_entry.connect(SIGNAL(:editingFinished)) {
 			school_init = @secondary_school_entry.text[0..0]
 			if %w(E C N).include? school_init
-				$character.secondary = %w(Earth Celestial Nature)[ %w(E C N).index(school_init) ]
+				$character.secondary = school_list[ %w(E C N).index(school_init) ]
 			end
 			@primary_school_entry.text = $character.primary
 			@secondary_school_entry.text = $character.secondary
@@ -231,9 +266,22 @@ class InfoWidget < Qt::Widget
 			@creation_entry.date= Qt::Date.new()
 		end
 
-		@race_entry.text= $character.race.to_s
+		case $config.setting 'Race Entry'
+		when 'Line Edit','Text Box' then
+			@race_entry.text= $character.race.to_s
+		when 'Drop Down','Combo Box' then
+			@race_entry.current_index = @race_list.index($character.race.to_s)
+		end
+
 		@subrace_entry.text= $character.subrace
-		@class_entry.text= $character.character_class.to_s
+
+		case $config.setting 'Class Entry'
+		when 'Line Edit', 'Text Box' then
+			@class_entry.text= $character.character_class.to_s
+		when 'Drop Down', 'Combo Box' then
+			@class_entry.current_index = @class_list.index($character.character_class.to_s)
+		end
+
 		@primary_school_entry.text= $character.primary
 		@secondary_school_entry.text= $character.secondary
 		@level_label.text= $character.experience.level
