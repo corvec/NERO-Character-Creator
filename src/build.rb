@@ -458,6 +458,34 @@ class Build
 		end
 	end
 
+	def valid_option_values option
+		case option
+		when 'Hand'
+			['Right','Left']
+		when 'Weapon'
+			wh = {'Archery'=>['Bow','Crossbow'],
+				'One Handed Blunt'=>['Sap','Bludgeon','Short Hammer','Long Hammer','Short Mace','Long Mace'],
+				'One Handed Edged'=>['Dagger','Hatchet','Short Sword','Long Sword','Short Axe','Long Axe'],
+				'Polearm'=>['Polearm'],#'Two Handed Axe','Halberd','Scythe','Bardiche','Guisarme','Glaive'],
+				'Small Weapon'=>['Sap','Bludgeon','Dagger','Hatchet','Small Hammer'],
+				'Staff'=>['Staff'],
+				'Thrown Weapon'=>['Throwing Dagger','Javelin','Throwing Rock'],
+				'Two Handed Blunt'=>['Two Handed Blunt'],
+				'Two Handed Sword'=>['Two Handed Sword']}
+			wh['One Handed Weapon Master'] = wh['One Handed Edged'] + wh['One Handed Blunt']
+			wh['Two Handed Weapon Master'] = wh['Polearm'] + wh['Two Handed Blunt'] + wh['Two Handed Sword']
+			wh['Weapon Master'] = wh['One Handed Weapon Master'] + wh['Two Handed Weapon Master']
+
+			r = ['Other']
+			@skills.each do |s|
+				r += wh[s.skill.name] if wh.has_key?(s.skill.name)
+			end
+			return r
+		else
+			nil
+		end
+	end
+
 	# Intended to be used by add_skill upon finding includes
 	# Does NOT check to ensure that the removed skill is not
 	# satisfying other requirements; for that, run build.legal?() or build.legally_delete_skill

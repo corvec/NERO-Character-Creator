@@ -109,12 +109,13 @@ class NERO_Skill
 		#         'Dwarf Scholar' => 3,
 		#         'Dwarf Rogue' => 3,
 		#         'Fighter' => 3,
+
 		#         'Templar' => 3,
 		#         'Scholar' => 4,
 		#         'Rogue' => 4},
 		# prereqs = [], # Smithing has no prereqs (read/write is a typo)
 		# includes = [],
-		# options = {},
+		# options = [],
 		# limit = 0 # no limit to the number of purchases of smithing
 		@name = skill_name
 		@cost = cost
