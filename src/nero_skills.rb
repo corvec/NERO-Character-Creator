@@ -269,10 +269,6 @@ class NERO_Skill
 		return false
 	end
 
-	def is_a_spell?
-		@name.match /\w \d/
-	end
-
 	def get_all_includes includes = nil, recurse = nil
 		if includes == nil
 			if @includes.is_a? Array

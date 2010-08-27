@@ -527,8 +527,6 @@ Resist Sleep:
       Drae: 2
       Elf: 2
 Shield:
-   Includes:
-      - Weapon
    Cost:
       Fighter: 5
       Rogue: 10

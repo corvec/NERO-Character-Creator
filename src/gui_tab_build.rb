@@ -135,6 +135,7 @@ class BuildWidget < Qt::Widget
 						skill_options_layout.addWidget(o_label)
 						skill_options_layout.addWidget(o_entry)
 					end
+					option_widgets[1].setFocus
 				end
 				skill_options_frame.updateGeometry()
 				skill_options_frame.repaint()
@@ -200,7 +201,7 @@ class BuildWidget < Qt::Widget
 			end
 		end
 		if !$character.build.add_skill skill_name, options
-			err = Qt::MessageBox.new(nil,'Error Adding Skill',$character.build.get_add_error())
+			err = Qt::MessageBox.new(nil,'Error Adding Skill',$character.build.add_error)
 			err.show()
 		else
 			case $config.setting('Skill Entry')
@@ -294,7 +295,7 @@ class SkillsWidget < Qt::ScrollArea
 
 				skill_count_inc.connect(SIGNAL(:clicked)) {
 					unless $character.build.add_skill(skill.skill,skill.options)
-						err = Qt::MessageBox.new(nil,'Error Incrementing Skill',$character.build.get_add_error())
+						err = Qt::MessageBox.new(nil,'Error Incrementing Skill',$character.build.add_error)
 						err.show()
 					end
 					if $character.build.commit?
@@ -365,7 +366,7 @@ class SpellTreeLayout < Qt::GridLayout
 			@tree[i].setMaxLength(2)
 			@tree[i].setAlignment Qt::AlignHCenter
 			@tree[i].readOnly = true
-			@tree[i].toolTip = "Cost: #{@base_cost * spell_cost(i)}"
+			@tree[i].toolTip = "Cost: #{@base_cost * $character.build.spell_cost(i)}"
 			self.addWidget(@tree[i],1,i+(i/3),Qt::AlignCenter)
 
 			@plus[i] = Qt::PushButton.new('+',nil)
@@ -403,64 +404,17 @@ private
 		return @tree[i].text.to_i
 	end
 
-	def set_spells_at i, val
-		return if val < 0
-		@tree[i].text= val.to_s
-	end
-
-	def enforce_legality static
-		# First traverse down in number:
-		(static - 1).downto(0) do |i|
-		#(0 .. (static - 1)).each do |j|
-      #i = (static - 1) - j
-			# turning 44 into 45 -> 55
-			if spells_at(i) < spells_at(i+1)
-				set_spells_at(i, spells_at(i+1))
-			end
-			if spells_at(i) < 4 and spells_at(i) == spells_at(i+1)
-				set_spells_at(i, spells_at(i)+1)
-			end
-			if spells_at(i) <= 4 and spells_at(i) > spells_at(i+1)+2
-				set_spells_at(i, spells_at(i)-1)
-			end
-			if spells_at(i) > 4 and spells_at(i) > spells_at(i+1)+1
-				set_spells_at(i, spells_at(i)-1)
-			end
-		end
-		(static + 1).upto(8) do |i|
-			if spells_at(i-1) < spells_at(i)
-				set_spells_at(i, spells_at(i-1))
-			end
-			if spells_at(i-1) < 4 and spells_at(i-1) == spells_at(i)
-				set_spells_at(i, spells_at(i)-1)
-			end
-			if spells_at(i-1) <= 4 and spells_at(i-1) > spells_at(i) + 2
-				set_spells_at(i, spells_at(i-1)-2)
-			end
-			if spells_at(i-1) > 4 and spells_at(i-1) > spells_at(i) + 1
-				set_spells_at(i,spells_at(i-1)-1)
-			end
-		end
-
-	end
-
 public
-	def increment i
-		if self.can_add_spells()
-			set_spells_at(i, spells_at(i) + 1)
-			enforce_legality(i)
-			enforce_legality(i)
-			self.commit()
-		else
-			$log.error 'Cannot add spell: Missing some prerequisite.'
-			err = Qt::MessageBox.new(nil,'Error Adding Spell','Cannot add spell: Missing some prerequisite.')
+	def increment level
+		unless $character.build.increment_spell_slots(self.school(),level)
+			err = Qt::MessageBox.new(nil,'Error Adding Spell',$character.build.add_error)
 			err.show()
 		end
+		self.commit
 	end
 
-	def decrement i
-		set_spells_at(i, spells_at(i) - 1)
-		enforce_legality(i)
+	def decrement level
+		$character.build.decrement_spell_slots(self.school(),level)
 		self.commit()
 	end
 
@@ -487,26 +441,14 @@ public
 
 	def commit
 		school = self.school()
-		unless $character.build.set_tree school, self.tree
-			self.update
-			err = Qt::MessageBox.new(nil,'Error Adding Spell',$character.build.get_add_error())
-			err.show()
-		else
-			$tabs.each do |tab|
-				tab.update
-			end
+		$tabs.each do |tab|
+			tab.update
 		end
-	end
-
-	def tree
-		result = []
-		(0..8).each { |i| result << spells_at(i) }
-		return result
 	end
 
 	def change_cost_tooltips
 		(0..8).each do |i|
-			@tree[i].toolTip = "Cost: #{@base_cost * spell_cost(i)}"
+			@tree[i].toolTip = "Cost: #{@base_cost * $character.build.spell_cost(i)}"
 		end
 	end
 
@@ -514,40 +456,7 @@ public
 	# Basically this is meant to be added to the build total
 	# if this is a secondary tree
 	def tree_cost
-		cost = 0
-		(0..8).each do |i|
-			cost += self.spell_cost(i)*@tree[i].text.to_i
-		end
-		cost *= 2 if @tree_type != 'Primary'
-		return cost
+		return $character.build.tree_cost(self.school())
 	end
 
-	# Returns true if the character has the proper skills needed
-	# to add spells.
-	def can_add_spells
-		skill = $nero_skills.lookup( "#{self.school()} 1" )
-		cskill= Character_Skill.new(skill, {}, 1, $character)
-
-		return cskill.meets_prerequisites?
-	end
-
-	
-	def spell_cost i
-		case $character.character_class.name
-		when 'Scholar'
-			return scholar_cost(i)
-		when 'Templar'
-			return (i * 2/3) + 1
-		when 'Fighter'
-			return scholar_cost(i)*3
-		when 'Rogue'
-			return 2 * scholar_cost(i)
-		else
-			return scholar_cost(i)
-		end
-	end
-
-	def scholar_cost i
-		return (i * 1/2) + 1
-	end
 end

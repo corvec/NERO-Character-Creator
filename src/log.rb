@@ -48,6 +48,23 @@ class TempLog
 	end
 end
 
+class FallbackLog
+	attr_reader :msg
+	def initialize
+		@msg = []
+	end
+	def debug m
+	end
+	def info m
+	end
+	def warn m
+	end
+	def error m
+	end
+	def fatal m
+	end
+end
+
 
 
 $log = TempLog.new()
@@ -57,8 +74,12 @@ def init_log
 	if $config.setting('Log Output').upcase == "STDOUT"
 		$log = Logger.new(STDOUT)
 	else
-		# Creates a logger based off of configuration settings
-		$log = Logger.new($config.setting('Log Output'), $config.setting('Log Count'), $config.setting('Log Size'))
+		begin
+			# Creates a logger based off of configuration settings
+			$log = Logger.new($config.setting('Log Output'), $config.setting('Log Count'), $config.setting('Log Size'))
+		rescue
+			$log = FallbackLog.new()
+		end
 	end
 
 	TempLog.export(temp_data)

@@ -28,6 +28,8 @@ class NERO_Config
 		@default_config['Export'] = "#{ENV['USERPROFILE']}/Desktop"
 		@default_config['Race Entry'] = 'Drop Down'
 		@default_config['Class Entry'] = 'Drop Down'
+		@default_config['Editor'] = "notepad.exe"
+		@default_config['Satisfy Prerequisites'] = true
 
 		@default_config['Enforce Build'] = false
 

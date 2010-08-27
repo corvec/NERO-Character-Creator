@@ -20,7 +20,7 @@ class AutoSaver
 end
 
 class BaseWidget < Qt::Widget
-	slots 'open()','save()','new()','save_as()','menu_exit()','export()','revert()'
+	#slots 'open()','save()','new()','save_as()','menu_exit()','export()','revert()'
 	def initialize(parent=nil)
 		super(parent)
 
@@ -32,46 +32,48 @@ class BaseWidget < Qt::Widget
 		@file_menu = Qt::Menu.new('&File')
 
 		action_new = Qt::Action.new('&New',self)
+		action_open = Qt::Action.new('&Open',self)
+		action_revert = Qt::Action.new('Reload from Disk', self)
+		action_save = Qt::Action.new('&Save',self)
+		action_save_as = Qt::Action.new('Save &As',self)
+		action_new.shortcut = Qt::KeySequence.new("Ctrl+N")
+		action_open.shortcut = Qt::KeySequence.new("Ctrl+O")
+		action_save.shortcut = Qt::KeySequence.new("Ctrl+S")
+		action_save_as.shortcut = Qt::KeySequence.new("Ctrl+Shift+S")
+
+
 		@file_menu.addAction(action_new)
 		action_new.connect(SIGNAL(:triggered)) {
 			self.new()
 		}
 		#connect(action_new, SIGNAL('triggered()'),
 				  #self, SLOT('new()'))
-		action_new.shortcut = Qt::KeySequence.new("Ctrl+N")
 
-		action_open = Qt::Action.new('&Open',self)
 		@file_menu.addAction(action_open)
 		#connect(action_open, SIGNAL('triggered()'),
 				  #self, SLOT('open()'))
 		action_open.connect(SIGNAL(:triggered)) {
 			self.open()
 		}
-		action_open.shortcut = Qt::KeySequence.new("Ctrl+O")
 
-		action_revert = Qt::Action.new('Reload from Disk', self)
 		@file_menu.addAction(action_revert)
 		action_revert.connect(SIGNAL(:triggered)) {
 			self.revert()
 		}
 
-		action_save = Qt::Action.new('&Save',self)
 		@file_menu.addAction(action_save)
 		action_save.connect(SIGNAL(:triggered)) {
 			self.save()
 		}
 		#connect(action_save, SIGNAL('triggered()'),
 				  #self, SLOT('save()'))
-		action_save.shortcut = Qt::KeySequence.new("Ctrl+S")
 
-		action_save_as = Qt::Action.new('Save &As',self)
 		@file_menu.addAction(action_save_as)
 		action_save_as.connect(SIGNAL(:triggered)) {
 			self.save_as()
 		}
 		#connect(action_save_as, SIGNAL('triggered()'),
 				  #self, SLOT('save_as()'))
-		action_save_as.shortcut = Qt::KeySequence.new("Ctrl+Shift+S")
 
 		unless $config.setting('Chapter').nil?
 			action_export = Qt::Action.new('&Export as HTML to Desktop',self)
@@ -79,6 +81,7 @@ class BaseWidget < Qt::Widget
 			action_export.connect(SIGNAL(:triggered)) {
 				self.export()
 			}
+			action_export.shortcut = Qt::KeySequence.new("Ctrl+E")
 			#connect(action_export, SIGNAL('triggered()'),
 					  #self, SLOT('export()'))
 		end
@@ -96,8 +99,8 @@ class BaseWidget < Qt::Widget
 		action_set_build = Qt::Action.new('Set &Build',self)
 		action_set_loose = Qt::Action.new('Set Loose Experience',self)
 		action_set_level = Qt::Action.new('Set &Level',self)
-		action_exp_undo = Qt::Action.new('&Undo',self)
-		action_exp_undo.shortcut = Qt::KeySequence.new("Ctrl+Z")
+		action_exp_undo = Qt::Action.new('&Delete Last Entry',self)
+		action_exp_undo.shortcut = Qt::KeySequence.new("Ctrl+D")
 		action_set_exp.connect(SIGNAL(:triggered)) {
 			qt_okay = Qt::Boolean.new()
 			val = Qt::InputDialog::getInteger(nil,'Set Experience','Experience',$character.experience.experience,0,999999999,1,qt_okay)
@@ -139,8 +142,60 @@ class BaseWidget < Qt::Widget
 		@exp_menu.addAction action_set_level
 		@exp_menu.addAction action_exp_undo
 
+		#Options Menu
+		@opt_menu = Qt::Menu.new('&Options')
+		action_open_config = Qt::Action.new('Open Options File',self)
+		action_open_config.connect(SIGNAL(:triggered)) {
+			system("#{$config.setting('Editor')} #{$config.setting('Working Directory')}/ncc.ini")
+		}
+		@opt_menu.addAction action_open_config
+
+		#Help Menu
+		@help_menu = Qt::Menu.new('&Help')
+		action_help = Qt::Action.new('&Help',self)
+		action_about = Qt::Action.new('&About',self)
+		action_help.connect(SIGNAL(:triggered)) {
+			system("hh ncc.chm")
+		}
+		action_html_help = Qt::Action.new('HT&ML Help',self)
+		action_html_help.connect(SIGNAL(:triggered)) {
+			Qt::DesktopServices.open_url(Qt::Url.new("file:///#{$config.setting('Working Directory')}/help/index.htm"))
+		}
+		action_about.connect(SIGNAL(:triggered)) {
+			dlg = Qt::Dialog.new(self)
+			dlg.windowTitle = "About NERO Character Creator"
+
+			widgets = []
+			widgets << Qt::Label.new('<b><font size="14">NERO Character Creator</font></b>',nil)
+			widgets.last.alignment = Qt::AlignCenter
+			#widgets.last.textFormat = Qt::RichText
+			widgets << Qt::Label.new('Version 0.9.2',nil)
+			widgets.last.alignment = Qt::AlignCenter
+			widgets << Qt::Label.new('by Corey T Kump',nil)
+			widgets.last.alignment = Qt::AlignCenter
+			widgets << Qt::Label.new('For the latest version, visit <a href="http://nero.sf.net">the Sourceforge page</a>.',nil)
+			widgets.last.openExternalLinks = true
+			widgets << Qt::Label.new('For discussion, questions, or support, visit <a href="http://neroindy.com/smf_forum/index.php?topic=1437.0">the thread on neroindy.com</a>.',nil)
+			widgets.last.openExternalLinks = true
+			widgets.last.openExternalLinks = true
+			widgets << Qt::Label.new('Or email <a href="mailto:Corey.Kump@gmail.com?subject=NERO Character Creator">the author</a> with "NERO Character Creator" in the subject line.',nil)
+			widgets.last.openExternalLinks = true
+
+			layout = Qt::VBoxLayout.new(dlg)
+			widgets.each do |w|
+				layout.addWidget(w)
+			end
+			dlg.show()
+		}
+		@help_menu.addAction action_help
+		@help_menu.addAction action_html_help
+		@help_menu.addAction action_about
+
+
 		@menubar.addMenu(@file_menu)
 		@menubar.addMenu(@exp_menu)
+		@menubar.addMenu(@opt_menu)
+		@menubar.addMenu(@help_menu)
 
 		@layout.addWidget(@menubar)
 
