@@ -24,6 +24,8 @@ require 'character_skill.rb'
 
 
 class Build
+	attr_reader :add_error
+
 	def initialize(character, filename = nil)
 		@character = character
 		@skills = []
@@ -66,7 +68,7 @@ class Build
 	def skills
 		result = []
 		@skills.each do |skill|
-			result << skill unless skill.skill.is_a_spell?()
+			result << skill if skill.skill.visible
 		end
 
 		return result
@@ -104,24 +106,92 @@ class Build
 		@spells[school]
 	end
 
-	def set_tree school, tree
-		$log.info "Build.set_tree(#{school.inspect},#{tree.inspect})"
-
-
-		if $config.setting('Enforce Build')
-			base_diff = self.spells_cost(school,tree) - self.spells_cost(school)
-			tree_mult = school == @character.primary ? 1 : 2
-			if base_diff > 0 and (base_diff * tree_mult > @character.experience.build - self.calculate_cost)
-				@add_error = "Cannot add spell because you do not have enough loose build to support the resulting tree: \n #{tree.join('/')}"
+	# Increase the number of spell slots in the given school at the given level by 1
+	def increment_spell_slots school, lvl
+		$log.info "Build::increment_spell_slots(#{school},#{lvl})"
+		build_state_data = self.save_state
+		if self.can_add_spells(school)
+			set_spells_at(school, lvl, spells_at(school, lvl) + 1)
+			enforce_legality(school, lvl)
+			enforce_legality(school, lvl)
+			self.legalize()
+			if $config.setting('Enforce Build') and (self.calculate_cost() > @character.experience.build)
+				@add_error = "Insufficient loose build."
+				self.load_state(build_state_data)
 				return false
+			end
+			return true
+		else
+			$log.error 'Cannot add spell: Missing some prerequisite.'
+			@add_error = 'Cannot add spell: Missing some prerequisite.'
+			return false
+		end
+	end
+
+	# Decrease the number of spell slots in the given school at the given level by 1
+	def decrement_spell_slots school, lvl
+		set_spells_at(school, lvl, spells_at(school, lvl) - 1)
+		enforce_legality(school, lvl)
+		self.legalize()
+		return true
+	end
+
+	def spells_at school, level
+		spell_at school, level + 1
+	end
+
+	def set_spells_at school, level, count
+		if count.is_a? Integer and count >= 0
+			@spells[school][level] = count
+		end
+	end
+
+	# Returns true if the character has the proper skills needed
+	# to add spells.
+	def can_add_spells school
+		skill = $nero_skills.lookup( "#{school} 1" )
+		cskill= Character_Skill.new(skill, {}, 1, $character)
+
+		if cskill.meets_prerequisites?
+			return true
+		elsif $config.setting('Satisfy Prerequisites')
+			return self.automatically_add_prerequisites(skill, {}, 1)
+		end
+	end
+
+	# Force the tree to be legal, keeping static the second parameter (the level)
+	def enforce_legality school, static
+		# First traverse down in number:
+		(static - 1).downto(0) do |i|
+			# turning 44 into 45 -> 55
+			if spells_at(school,i) < spells_at(school,i+1)
+				set_spells_at(school,i, spells_at(school,i+1))
+			end
+			if spells_at(school,i) < 4 and spells_at(school,i) == spells_at(school,i+1)
+				set_spells_at(school,i, spells_at(school,i)+1)
+			end
+			if spells_at(school,i) <= 4 and spells_at(school,i) > spells_at(school,i+1)+2
+				set_spells_at(school,i, spells_at(school,i)-1)
+			end
+			if spells_at(school,i) > 4 and spells_at(school,i) > spells_at(school,i+1)+1
+				set_spells_at(school,i, spells_at(school,i)-1)
+			end
+		end
+		(static + 1).upto(8) do |i|
+			if spells_at(school,i-1) < spells_at(school,i)
+				set_spells_at(school,i, spells_at(school,i-1))
+			end
+			if spells_at(school,i-1) < 4 and spells_at(school,i-1) == spells_at(school,i)
+				set_spells_at(school,i, spells_at(school,i)-1)
+			end
+			if spells_at(school,i-1) <= 4 and spells_at(school,i-1) > spells_at(school,i) + 2
+				set_spells_at(school,i, spells_at(school,i-1)-2)
+			end
+			if spells_at(school,i-1) > 4 and spells_at(school,i-1) > spells_at(school,i) + 1
+				set_spells_at(school,i,spells_at(school,i-1)-1)
 			end
 		end
 
-		tree.each_with_index do |spell_count, i|
-			@spells[school][i] = spell_count
-		end
-		self.legalize()
-		return true
 	end
 
 	def spells_cost school, tree = nil
@@ -131,6 +201,12 @@ class Build
 			cost += spell_cost(i) * tree[i]
 		end
 		return cost
+	end
+
+	def tree_cost school, tree = nil
+		val = spells_cost(school,tree)
+		return val if school == $character.primary
+		return val * 2
 	end
 
 	# Returns the cost of a spell slot of a particular level for this character
@@ -156,7 +232,8 @@ class Build
 		@spells['Nature'] = [0] * 9 if self.count('Runes of Nature') <= 0
 	end
 
-	# Returns true if the character can have ANY spells
+	# Returns true if the spells that the characters has are all legal
+	# Returns false if any of them are illegal
 	def legal_tree?
 		if @spells['Earth'][0] > 0 and self.count('Healing Arts') <= 0
 			return false
@@ -249,20 +326,21 @@ class Build
 		return c
 	end
 
-	def get_add_error
-		@add_error
-	end
-
 	# Add a skill
 	# If there is an error, store the error message in @add_error
 	def add_skill(skill, options={}, amount=1, force=false)
 		$log.debug "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force})"
 		@add_error = "No error occurred..."
+		@auto_add_error = ''
+		unless force
+			build_data = self.save_state
+		end
+
 		unless skill.is_a? NERO_Skill
 			skill = $nero_skills.lookup(skill)
 		end
 
-		$log.debug "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force.inspect})"
+		$log.debug "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force.inspect}) - Lookup completed."
 
 		unless skill.is_a? NERO_Skill
 			$log.error "Build.add_skill(#{skill.inspect}) - Skill was not found in the lookup table."
@@ -270,10 +348,16 @@ class Build
 			return false
 		end
 
-		if skill.is_a_spell?
+		# Skill is a spell
+		unless skill.visible
 			return self.set_spell(skill, amount) if force
-			@add_error = "Build.add_skill(#{skill.name.inspect}) - Cannot add spells through this dialog"
-			return false
+			if amount != 1
+				@add_error = "Build.add_skill(#{skill.name.inspect}) - Cannot add spells through this dialog"
+				return false
+			end
+			school = skill.name.split(' ')[0]
+			lvl = skill.name.split(' ')[1].to_i
+			return self.increment_spell_slots(school, lvl-1)
 		end
 
 		unless options.is_a? Hash
@@ -305,15 +389,29 @@ class Build
 		unless force
 			unless char_skill.meets_prerequisites?(self)
 				$log.warn "Build.add_skill(#{skill.name.inspect}): Prerequisites not met"
-				@add_error = "You cannot add '#{skill.name}' because you are missing some prerequisite.  The prerequisites are: |"
-				skill.prereqs.each do |prereq|
-					if prereq.is_a? Array
-						@add_error += " #{prereq[0]}x#{prereq[1]} |"
-					else
-						@add_error += " #{prereq} |"
+				# Generate the error either way, in case the operation fails down the road: the user
+				# needs to know about the prerequisites
+				if $config.setting('Satisfy Prerequisites')
+					prereq_skills_added = self.automatically_add_prerequisites(skill,options,amount)
+					unless prereq_skills_added
+						@add_error = "Encountered an error during an #{@auto_add_error}"
+						self.load_state build_data
+						return false
 					end
+				else
+					@add_error = "You cannot add '#{skill.name}' because you are missing some prerequisite.  The prerequisites are: |"
+					spreqs = skill.prereqs.to_a
+					spreqs.each do |prereq|
+						if prereq.is_a? Array
+							@add_error += "#{prereq[0]}x#{prereq[1]}"
+						else
+							@add_error += " #{prereq} |"
+						end
+						@add_error += ', ' unless spreqs.last == prereq
+						@add_error += ']' if spreqs.last == prereq
+					end
+					return false
 				end
-				return false
 			end
 			@skills.each do |skill_to_check|
 				if char_skill.is_included_in?(skill_to_check.skill)
@@ -322,18 +420,20 @@ class Build
 					return false
 				end
 			end
-			if $config.setting('Enforce Build') 
-				$log.debug "Build.add_skill(#{skill.name}) - Enforce Build is true.  Checking to see if (#{self.calculate_cost()} + #{char_skill.cost()} - #{self.includes_cost(skill)}) > #{@character.experience.build}"
-				if (self.calculate_cost() + char_skill.cost() - self.includes_cost(skill)) > @character.experience.build
-					$log.warn "Build.add_skill(#{skill.name.inspect}): Not enough loose build."
-					@add_error = "You cannot add #{skill.name} because you do not have enough loose build!"
-					return false
-				end
-			end
 		end
 
 
 		force_add_skill(char_skill,force)
+
+		# Enforce Build Total:
+		if !force and $config.setting('Enforce Build') and (self.calculate_cost() > @character.experience.build)
+			$log.warn "Build.add_skill(#{skill.name.inspect}): Not enough loose build."
+			@add_error = "You cannot add #{skill.name} because you do not have enough loose build!  You must have #{self.calculate_cost} total build to purchase this skill."
+			@add_error += "\nThis followed a successful #{@auto_add_error}\nAutomatically purchased skills have been removed." unless @auto_add_error.empty?
+			self.load_state build_data
+			@needs_commit = true
+			return false
+		end
 
 
 		# Check its includes and if they're present, delete them
@@ -342,6 +442,89 @@ class Build
 		end
 		return true
 	end
+
+
+
+	def automatically_add_prerequisites skill, options={}, count=1
+		if skill.is_a? Character_Skill
+			char_skill = skill
+			skill   = char_skill.skill
+			count   = char_skill.count
+			options = char_skill.options
+		else
+			char_skill = Character_Skill.new(skill,options,count,@character)
+		end
+
+		auto_add_error = "attempt to automatically add prerequisites for '#{skill.name}'.  The prerequisites are: ["
+		$log.info "Build.add_skill(#{skill.name.inspect}): Automatically purchasing prerequisites"
+		error_encountered = false
+
+		enforce_build_value = $config.setting('Enforce Build')
+		$config.update_setting('Enforce Build',false)
+
+		spreqs = skill.prereqs.to_a
+
+		spreqs.each do |prereq|
+			if prereq.is_a? Array
+				auto_add_error += "#{prereq[0]}x#{prereq[1]}"
+				unless error_encountered
+					(prereq[1]*count).times do
+						unless char_skill.meets_prerequisites? self
+							unless self.add_skill(prereq[0],options,1)
+								error_encountered = true
+							end
+						end
+					end
+				end
+			else # prereq.is_a String
+				auto_add_error += prereq
+				unless error_encountered
+					unless self.add_skill(prereq,options,1)
+						error_encountered = true
+					end
+				end
+			end
+			unless spreqs.last == prereq
+				auto_add_error += ', '
+			else
+				auto_add_error += ']'
+			end
+		end
+		$log.info "AAE: #{auto_add_error}"
+		$config.update_setting('Enforce Build',enforce_build_value)
+		@auto_add_error = auto_add_error
+		if error_encountered
+			return false
+		end
+		@needs_commit = true
+		return true
+	end
+
+	# Save the current build in a temporary variable
+	def save_state
+		skills_clone = []
+		@skills.each do |skill|
+			skills_clone << skill.clone
+		end
+		spells_clone = {}
+		@spells.each do |school,tree|
+			spells_clone[school] = tree.clone
+		end
+		return [skills_clone, spells_clone]
+	end
+
+	# Load the current build from the temporary variable, if the temp variable is set
+	def load_state data
+		skills_clone = data[0]
+		spells_clone = data[1]
+		unless skills_clone.nil?
+			@skills = skills_clone
+			spells_clone.each do |school, tree|
+				@spells[school] = tree
+			end
+		end
+	end
+
 
 	# Returns the cost currently spent upon the skills included by the listed skill
 	def includes_cost nero_skill
@@ -354,7 +537,7 @@ class Build
 		cskills.each do |cskill|
 			cost += cskill.cost
 		end
-		$log.info "Build.includes_cost(#{nero_skill.name.inspect}) = #{cost.inspect}"
+		$log.debug "Build.includes_cost(#{nero_skill.name.inspect}) = #{cost.inspect}"
 		return cost
 	end
 
