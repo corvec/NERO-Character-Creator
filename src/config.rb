@@ -7,14 +7,18 @@ class NERO_Config
 	def initialize filename
 		begin
 			@config = YAML.load(File.open(filename,'r'))
+			@filename = filename
+			@config_dir = Dir.getwd()
 		rescue
 			@config = {}
 			$log.error "Could not open configuration file ('#{filename}')"
 		end
 		@default_config = {}
-		@default_config['Log Output'] = Dir.pwd + '/nero.log'
+		@default_config['Enable Logging'] = true
+		@default_config['Log Output'] = 'nero.log'
 		@default_config['Log Count'] = 1
-		@default_config['Log Size'] = 1024000
+		@default_config['Log Size'] = 1024
+		@default_config['Log Threshold'] = 'Warnings'
 		@default_config['Skill Count Min Width'] = 10
 		@default_config['Skill Count Max Width'] = 20
 		@default_config['Skill Count Min Height'] = 10
@@ -24,8 +28,9 @@ class NERO_Config
 		@default_config['Skill Data'] = 'skills.yml'
 		@default_config['Working Directory'] = Dir.pwd()
 		@default_config['Goblins'] = 'Individual'
+		@default_config['Enable Autosave'] = true
 		@default_config['Autosave'] = 'ncc.yml'
-		@default_config['Export'] = "#{ENV['USERPROFILE']}/Desktop"
+		@default_config['Export'] = "#{ENV['USERPROFILE'].gsub('\\','/')}/Desktop"
 		@default_config['Race Entry'] = 'Drop Down'
 		@default_config['Class Entry'] = 'Drop Down'
 		@default_config['Editor'] = "notepad.exe"
@@ -47,6 +52,8 @@ class NERO_Config
 
 	def update_setting(key,val)
 		@config[key] = val
+		# Avoid storing default configuration in config files
+		@config.delete key if @default_config[key] == val
 	end
 
 	def chdir
@@ -68,6 +75,27 @@ class NERO_Config
 		rescue
 			$log.error "NERO_Config.chdir() - Failed to set documents directory..."
 		end
+	end
+
+	def commit_settings
+		$log.info "Config::commit_settings()"
+		retval = true
+		cwd = Dir.getwd()
+		Dir.chdir(@config_dir)
+
+		begin
+			File.open(@filename,'w') { |f|
+				f.write(YAML.dump(@config))
+			}
+		rescue Exception => e
+			$log.error "Could not save configuration file..."
+			$log.error e.inspect
+			$log.error e.backtrace
+			retval = false
+		end
+		Dir.chdir(cwd)
+
+		return retval
 	end
 
 end

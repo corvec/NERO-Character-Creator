@@ -37,10 +37,10 @@ Assassinate/Dodge:
    Options:
       - Hand
    Cost:
-      Fighter: 6
+      Fighter: 20
       Rogue: 10
-      Scholar: 15
-      Templar: 12
+      Scholar: 20
+      Templar: 20
 Back Attack:
    Max: 4
    Requires:

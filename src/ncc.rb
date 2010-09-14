@@ -21,6 +21,7 @@
 require 'rubygems'
 require 'Qt4'
 require 'date'
+require 'optparse'
 
 require 'character.rb'
 require 'build.rb'
@@ -35,8 +36,26 @@ require 'gui.rb'
 if __FILE__ == $0
 	$log.info "Starting NERO Character Creator (by Corvec!)..."
 
+
+=begin
+	OptionParser.new do |opts|
+		opts.banner = "Usage: ncc.exe [options]"
+
+		opts.on "--config [CONFIG]", "Load custom configuration file" do |config|
+			$config = NERO_Config.new(config)
+		end
+	end.parse! ARGV
+=end
+
+	ARGV.each do |arg|
+		if File.exists?(arg)
+			$config = NERO_Config.new(arg) if $config.nil?
+			break
+		end
+	end
+
 	$data_path = "#{Dir.getwd()}/"
-	$config = NERO_Config.new($data_path + 'ncc.ini')
+	$config = NERO_Config.new($data_path + 'ncc.ini') if $config.nil?
 
 	init_log()
 

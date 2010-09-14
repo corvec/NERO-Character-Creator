@@ -4,6 +4,7 @@ require 'gui_tab_info.rb'
 require 'gui_tab_build.rb'
 require 'gui_tab_experience.rb'
 require 'gui_tab_backstory.rb'
+require 'gui_config.rb'
 
 
 # If added to the list of tabs, this will automatically save to the passed file every time the tabs are all updated.
@@ -13,9 +14,15 @@ class AutoSaver
 	end
 
 	def update
-		File.open(@filename,'w') { |f|
-			f.write($character.to_yaml)
-		}
+		if $config.setting('Enable Autosave')
+			begin
+				File.open(@filename,'w') { |f|
+					f.write($character.to_yaml)
+				}
+			rescue Exception => e
+				$log.error "Failed to autosave"
+			end
+		end
 	end
 end
 
@@ -148,18 +155,24 @@ class BaseWidget < Qt::Widget
 		action_open_config.connect(SIGNAL(:triggered)) {
 			system("#{$config.setting('Editor')} #{$config.setting('Working Directory')}/ncc.ini")
 		}
-		@opt_menu.addAction action_open_config
+		#@opt_menu.addAction action_open_config
+		action_config_window = Qt::Action.new('&Settings',self)
+		action_config_window.connect(SIGNAL(:triggered)) {
+			config_window = ConfigWidget.new(self)
+			config_window.show()
+		}
+		@opt_menu.addAction action_config_window
 
 		#Help Menu
 		@help_menu = Qt::Menu.new('&Help')
 		action_help = Qt::Action.new('&Help',self)
 		action_about = Qt::Action.new('&About',self)
 		action_help.connect(SIGNAL(:triggered)) {
-			system("hh ncc.chm")
+			system("hh \"#{$config.setting('Working Directory')}/ncc.chm\"")
 		}
 		action_html_help = Qt::Action.new('HT&ML Help',self)
 		action_html_help.connect(SIGNAL(:triggered)) {
-			Qt::DesktopServices.open_url(Qt::Url.new("file:///#{$config.setting('Working Directory')}/help/index.htm"))
+			Qt::DesktopServices.open_url(Qt::Url.new("file:///#{$config.setting('Working Directory')}/help.htm"))
 		}
 		action_about.connect(SIGNAL(:triggered)) {
 			dlg = Qt::Dialog.new(self)
@@ -259,6 +272,7 @@ class BaseWidget < Qt::Widget
 		$log.debug "Saving As"
 		if file == nil
 			Qt::FileDialog.new do |fd|
+				fd.default_suffix = 'txt'
 				file = fd.get_save_file_name()
 			end
 		end
@@ -317,7 +331,7 @@ class BaseWidget < Qt::Widget
 		$log.info "Opening"
 		file = nil
 		Qt::FileDialog.new() do |fd|
-			file = fd.get_open_file_name
+			file = fd.get_open_file_name(nil, 'Open NERO Character Sheet', $config.setting('Save Directory').to_s, 'YAML Files (*.yml)')
 		end
 		return unless file
 		self.new()

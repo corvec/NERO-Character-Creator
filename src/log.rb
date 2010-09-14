@@ -71,15 +71,20 @@ $log = TempLog.new()
 
 def init_log
 	temp_data = $log.msg
-	if $config.setting('Log Output').upcase == "STDOUT"
-		$log = Logger.new(STDOUT)
-	else
-		begin
-			# Creates a logger based off of configuration settings
-			$log = Logger.new($config.setting('Log Output'), $config.setting('Log Count'), $config.setting('Log Size'))
-		rescue
-			$log = FallbackLog.new()
+	if $config.setting('Enable Logging')
+		if $config.setting('Log Output').upcase == "STDOUT"
+			$log = Logger.new(STDOUT)
+		else
+			begin
+				# Creates a logger based off of configuration settings
+				$log = Logger.new($config.setting('Log Output'), $config.setting('Log Count').to_i, 1024*$config.setting('Log Size').to_i)
+				$log.debug "init_log(): Permanent log created..."
+			rescue
+				$log = FallbackLog.new()
+			end
 		end
+	else
+		$log = FallbackLog.new()
 	end
 
 	TempLog.export(temp_data)
@@ -87,15 +92,15 @@ def init_log
 	$log.sev_threshold = Logger::INFO
 	unless $config.setting("Log Threshold").nil?
 		case $config.setting.upcase
-		when 'DEBUG' then
+		when 'DEBUG','DEBUG DATA' then
 			$log.sev_threshold = Logger::DEBUG
-		when 'INFO' then
+		when 'INFO','INFORMATION' then
 			$log.sev_threshold = Logger::INFO
-		when 'WARN' then
+		when 'WARN','WARNINGS' then
 			$log.sev_threshold = Logger::WARN
-		when 'ERROR' then
+		when 'ERROR','ERRORS' then
 			$log.sev_threshold = Logger::ERROR
-		when 'FATAL' then
+		when 'FATAL','FATAL ERRORS' then
 			$log.sev_threshold = Logger::FATAL
 		end
 	end
