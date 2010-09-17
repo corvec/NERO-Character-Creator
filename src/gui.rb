@@ -272,13 +272,13 @@ class BaseWidget < Qt::Widget
 		$log.debug "Saving As"
 		if file == nil
 			Qt::FileDialog.new do |fd|
-				fd.default_suffix = 'txt'
-				file = fd.get_save_file_name()
+				fd.defaultSuffix = 'yml'
+				file = fd.get_save_file_name(nil,'Save NERO Character Sheet',$config.setting('Save Directory').to_s,'YAML Files (*.yml);;All Files (*)' )
 			end
 		end
 		unless file
 			$log.warn "Save As: No filename provided..."
-			return
+			return nil
 		end
 		@file = file
 
@@ -331,7 +331,7 @@ class BaseWidget < Qt::Widget
 		$log.info "Opening"
 		file = nil
 		Qt::FileDialog.new() do |fd|
-			file = fd.get_open_file_name(nil, 'Open NERO Character Sheet', $config.setting('Save Directory').to_s, 'YAML Files (*.yml)')
+			file = fd.get_open_file_name(nil, 'Open NERO Character Sheet', $config.setting('Save Directory').to_s, 'YAML Files (*.yml);;All Files (*)')
 		end
 		return unless file
 		self.new()

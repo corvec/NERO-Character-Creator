@@ -257,7 +257,9 @@ class SkillsWidget < Qt::ScrollArea
 		@grid = Qt::GridLayout.new(nil) #the old grid should automatically be destroyed
 		@skills = $character.build.skills
 		@skills.each_with_index do |skill,i|
-			@grid.addWidget(Qt::Label.new(skill.name,nil),i,1)
+			skill_name_label = Qt::Label.new(skill.name,nil)
+			skill_name_label.setMinimumWidth(200)
+			@grid.addWidget(skill_name_label,i,1)
 			skill_cost_label = Qt::Label.new(skill.cost().to_s,nil)
 			@grid.addWidget(skill_cost_label,i,3)
 			if skill.skill.limit != 1

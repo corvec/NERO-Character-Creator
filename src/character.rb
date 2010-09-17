@@ -87,7 +87,8 @@ class NERO_Character
 		when 'Templar'
 			body = @experience.level + 3
 		when 'Scholar'
-			body = ((@experience.level - 1) * (0.666667) + 3).round
+			#body = ((@experience.level - 1) * (0.666667) + 3).round
+			body = (@experience.level * 0.666667 + 2.333333).round
 		end
 
 		case @race.race
