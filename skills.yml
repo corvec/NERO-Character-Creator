@@ -24,6 +24,10 @@ Archery:
       Elf Rogue: 5
       Elf Scholar: 8
       Elf Templar: 6
+      Drae Fighter: 3
+      Drae Rogue: 5
+      Drae Scholar: 8
+      Drae Templar: 6
       Fighter: 6
       Rogue: 10
       Scholar: 15
@@ -171,6 +175,7 @@ Craftsman Other:
       Scholar: 3
       Templar: 3
 Create Potion:
+   Max: 0
    Requires:
       - Earth 4
    Cost:
@@ -179,6 +184,7 @@ Create Potion:
       Scholar: 3
       Templar: 4
 Create Scroll:
+   Max: 0
    Requires:
       - Celestial 4
    Cost:
@@ -225,6 +231,9 @@ Detect Celestial Magic:
       Barbarian: 2
 "Disarm/Arm Trap":
    Cost:
+      Hobling Rogue: 2
+      Hobling Scholar: 5
+      Hobling Templar: 5
       Fighter: 9
       Rogue: 3
       Scholar: 6
@@ -458,6 +467,9 @@ One Handed Weapon Master:
       Templar: 10
 Pick Locks:
    Cost:
+      Hobling Rogue: 2
+      Hobling Scholar: 5
+      Hobling Templar: 5
       Fighter: 9
       Rogue: 3
       Scholar: 9
