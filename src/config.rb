@@ -1,14 +1,13 @@
 #!/usr/bin/env ruby
 
-require 'rubygems'
-require 'win32/dir' if RUBY_PLATFORM.include?('win32') or RUBY_PLATFORM.include?('i386-mingw32')
-
 class NERO_Config
 	def initialize filename
 		begin
-			@config = YAML.load(File.open(filename,'r'))
+			File.open(filename,'r') do |cfile|
+				@config = YAML.load(cfile)
+			end
 			@filename = filename
-			@config_dir = Dir.getwd()
+			@config_dir = File.expand_path(File.dirname(filename))
 		rescue
 			@config = {}
 			$log.error "Could not open configuration file ('#{filename}')"
@@ -25,7 +24,7 @@ class NERO_Config
 		@default_config['Skill Count Max Height'] = 20
 		@default_config['Skill Entry'] = 'Drop Down' # Other choice: Line Edit
 		@default_config['Title'] = 'NERO Character Creator'
-		@default_config['Skill Data'] = 'skills.yml'
+		@default_config['Main Module'] = 'ncc_data.yml'
 		@default_config['Working Directory'] = Dir.pwd()
 		@default_config['Goblins'] = 'Individual'
 		@default_config['Enable Autosave'] = true
@@ -84,9 +83,9 @@ class NERO_Config
 		Dir.chdir(@config_dir)
 
 		begin
-			File.open(@filename,'w') { |f|
+			File.open(@filename,'w') do |f|
 				f.write(YAML.dump(@config))
-			}
+			end
 		rescue Exception => e
 			$log.error "Could not save configuration file..."
 			$log.error e.inspect

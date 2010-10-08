@@ -16,9 +16,9 @@ class AutoSaver
 	def update
 		if $config.setting('Enable Autosave')
 			begin
-				File.open(@filename,'w') { |f|
+				File.open(@filename,'w') do |f|
 					f.write($character.to_yaml)
-				}
+				end
 			rescue Exception => e
 				$log.error "Failed to autosave"
 			end
@@ -172,7 +172,7 @@ class BaseWidget < Qt::Widget
 		}
 		action_html_help = Qt::Action.new('HT&ML Help',self)
 		action_html_help.connect(SIGNAL(:triggered)) {
-			Qt::DesktopServices.open_url(Qt::Url.new("file:///#{$config.setting('Working Directory')}/help.htm"))
+			Qt::DesktopServices.open_url(Qt::Url.new("file:///#{$config.setting('Working Directory')}/help/help.htm"))
 		}
 		action_about.connect(SIGNAL(:triggered)) {
 			dlg = Qt::Dialog.new(self)
@@ -182,7 +182,7 @@ class BaseWidget < Qt::Widget
 			widgets << Qt::Label.new('<b><font size="14">NERO Character Creator</font></b>',nil)
 			widgets.last.alignment = Qt::AlignCenter
 			#widgets.last.textFormat = Qt::RichText
-			widgets << Qt::Label.new('Version 0.9.2',nil)
+			widgets << Qt::Label.new('Version 0.9.6',nil)
 			widgets.last.alignment = Qt::AlignCenter
 			widgets << Qt::Label.new('by Corey T Kump',nil)
 			widgets.last.alignment = Qt::AlignCenter
@@ -252,13 +252,13 @@ class BaseWidget < Qt::Widget
 		file = "#{$config.setting('Export')}/Tempsheet - #{$character.player_name} (#{$character.name}).html" if file.nil?
 		$log.debug "Exporting #{file}"
 		begin
-			File.open(file,'w') { |f|
+			File.open(file,'w') do |f|
 				unless $character.to_html.empty?
 					f.write($character.to_html)
 				else
 					$log.debug "export() Character did not generate HTML!"
 				end
-			}
+			end
 		rescue
 			$log.error "Could not export to file #{file}"
 			err = Qt::MessageBox.new(nil,"Error Exporting","Could not export to file #{file}")
@@ -283,9 +283,9 @@ class BaseWidget < Qt::Widget
 		@file = file
 
 		begin
-			File.open(@file,'w') { |f|
+			File.open(@file,'w') do |f|
 				f.write($character.to_yaml)
-			}
+			end
 		rescue Exception => e
 			$log.error "Could not save to file #{@file}"
 			$log.error e.inspect

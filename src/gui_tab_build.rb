@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-
-
 class BuildWidget < Qt::Widget
 	def initialize(parent=nil)
 		super(parent)
@@ -95,7 +93,7 @@ class BuildWidget < Qt::Widget
 			@skill_entry.add_items skill_list
 
 			@skill_entry.connect(SIGNAL('currentIndexChanged(int)')) {
-				skill = $nero_skills.lookup(@skill_entry.current_text)
+				skill = NERO_Skill.lookup(@skill_entry.current_text)
 
 				option_widgets.each do |o_widget|
 					o_widget.hide
@@ -184,6 +182,8 @@ class BuildWidget < Qt::Widget
 		base_layout.addWidget(banner_frame)
 		base_layout.addWidget(add_skill_frame)
 		base_layout.addWidget(known_skills_frame)
+
+		@saved_race = $character.race.to_s
 	end
 
 	def add_entered_skill
@@ -216,7 +216,7 @@ class BuildWidget < Qt::Widget
 	end
 
 	def build_skill_list()
-		skill_list = $nero_skills.skill_names
+		skill_list = NERO_Skill.list
 		skill_list.insert(0,'')
 		return skill_list
 	end
@@ -239,6 +239,13 @@ class BuildWidget < Qt::Widget
 		@primary_tree_layout.update
 		@secondary_tree_layout.update
 
+		if $character.race.to_s != @saved_race
+			$log.info "Updating skill list because of race change"
+			@saved_race = $character.race.to_s
+			@skill_entry.clear()
+			@skill_entry.add_items NERO_Skill.list
+		end
+
 		@skill_list.update
 	end
 end
@@ -255,13 +262,26 @@ class SkillsWidget < Qt::ScrollArea
 		old_frame = self.takeWidget()
 		old_frame.deleteLater if old_frame != nil
 		@grid = Qt::GridLayout.new(nil) #the old grid should automatically be destroyed
+
+		@abilities = $character.race.abilities
+		ability_count = @abilities.size
+		@abilities.each_with_index do |ability, i|
+			vert_pos = i
+
+			skill_name_label = Qt::Label.new("<i>#{ability.to_s}</i>",nil)
+			skill_name_label.setMinimumWidth(200)
+			@grid.addWidget(skill_name_label,vert_pos,1)
+		end
+
+
 		@skills = $character.build.skills
 		@skills.each_with_index do |skill,i|
-			skill_name_label = Qt::Label.new(skill.name,nil)
+			vert_pos = i + ability_count # Vertical Position in the grid
+			skill_name_label = Qt::Label.new(skill.to_s,nil)
 			skill_name_label.setMinimumWidth(200)
-			@grid.addWidget(skill_name_label,i,1)
+			@grid.addWidget(skill_name_label,vert_pos,1)
 			skill_cost_label = Qt::Label.new(skill.cost().to_s,nil)
-			@grid.addWidget(skill_cost_label,i,3)
+			@grid.addWidget(skill_cost_label,vert_pos,3)
 			if skill.skill.limit != 1
 				skill_count_frame = Qt::Frame.new(self)
 				skill_count_layout = Qt::GridLayout.new(skill_count_frame)
@@ -276,11 +296,11 @@ class SkillsWidget < Qt::ScrollArea
 				skill_count_dec.setMaximumHeight($config.setting('Skill Count Max Height').to_i)
 
 				skill_count_dec.connect(SIGNAL(:clicked)) {
-					domino = $character.build.legally_delete_skill skill.name, skill.options
+					domino = $character.build.legally_delete_skill skill.to_s, skill.options
 
 					#$log.debug "Domino: #{domino}"
 
-					if $character.build.commit? #domino or ($character.build.count(skill.name, skill.options) <= 0)
+					if $character.build.commit? #domino or ($character.build.count(skill.to_s, skill.options) <= 0)
 						self.commit
 					else
 						skill_count_label.text = "#{skill.count.to_s}X"
@@ -312,14 +332,14 @@ class SkillsWidget < Qt::ScrollArea
 				skill_count_layout.addWidget(skill_count_dec,1,0)
 				skill_count_layout.addWidget(skill_count_inc,1,1)
 
-				@grid.addWidget(skill_count_frame,i,0)
+				@grid.addWidget(skill_count_frame,vert_pos,0)
 			else
 				remove_skill_button = Qt::PushButton.new('X',nil)
 				remove_skill_button.connect(SIGNAL(:clicked)) {
-					$character.build.legally_delete_skill skill.name, skill.options
+					$character.build.legally_delete_skill skill.to_s, skill.options
 					self.commit() if $character.build.commit?
 				}
-				@grid.addWidget(remove_skill_button,i,0)
+				@grid.addWidget(remove_skill_button,vert_pos,0)
 			end
 
 			if skill.options != nil and skill.options.length > 0
@@ -333,7 +353,7 @@ class SkillsWidget < Qt::ScrollArea
 					j += 1
 				end
 
-				@grid.addWidget(options_frame,i,2)
+				@grid.addWidget(options_frame,vert_pos,2)
 			end
 		end
 		@frame = Qt::Frame.new()
@@ -425,7 +445,7 @@ public
 		$log.debug "SpellTree(#{self.school},#{@tree_type}).update()"
 		@tree.each_with_index do |t,i|
 			val = $character.build.spell_at(self.school, i+1)
-			t.text = val
+			t.text = val.to_s
 		end
 
 		@cost_label.text = "(#{self.tree_cost()})"

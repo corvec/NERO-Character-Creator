@@ -18,18 +18,18 @@
 	If not, see <http://www.gnu.org/licenses/>.
 =end
 
-require 'experience.rb'
-require 'build.rb'
-require 'logger.rb'
 require 'date'
 require 'yaml'
 
+require 'experience.rb'
+require 'build.rb'
+require 'log.rb'
 
 # The NERO_Character class contains all information associated with the character
 # It also references the character's Build and Experience
 class NERO_Character
-	attr_reader :player_name, :name, :date_created, :race, :subrace, :character_class
-	attr_writer :player_name, :name, :date_created, :subrace, :backstory
+	attr_reader :player_name, :name, :date_created, :race, :subrace, :character_class, :change_error
+	attr_writer :player_name, :name, :date_created, :subrace, :backstory, :change_error
 	attr_reader :experience, :primary, :secondary, :backstory, :build, :spirit_effects, :body_effects, :death_history
 	def initialize(filename=nil)
 		@player_name = ''
@@ -78,44 +78,22 @@ class NERO_Character
 	#
 	# Class and race calculations are hard-coded.
 	def calculate_body
-		body = 0
-		case @character_class.name
-		when 'Fighter'
-			body = 2 * @experience.level + 4
-		when 'Rogue'
-			body = @experience.level + 3
-		when 'Templar'
-			body = @experience.level + 3
-		when 'Scholar'
-			#body = ((@experience.level - 1) * (0.666667) + 3).round
-			body = (@experience.level * 0.666667 + 2.333333).round
-		end
+		body = @character_class.body(@experience.level)
+		body += @race.body
 
-		case @race.race
-		when 'Barbarian' then
-			body += 2
-		when 'Half Orc' then
-			body += 2
-		when 'Half Ogre' then
-			body += 2
-		when 'Dwarf' then
-			body += 1
-		when 'Elf' then
-			body -= 1
-		when 'Hobling' then
-			body -= 1
-		end
 		return body
 	end
 
 	# Set the character's class.
 	#
-	# Hobling Fighter prohibition is hard-coded.
+	# Prohibits changing to a prohibited class
 	def character_class=( c_class )
-		if @race.race == 'Hobling' and c_class == 'Fighter'
-			return
+		if @race.data.has_key?('Prohibited Classes') and @race.data['Prohibited Classes'].include?(c_class)
+			@change_error = "A #{@race.to_s} cannot be a #{c_class}."
+			$log.warn "NERO_Character.character_class=(#{c_class}) - Race prohibits this class."
+			return false
 		end
-		@character_class.name= c_class
+		@character_class = NERO_Class.new(c_class)
 	end
 
 	# Set the character's race.
@@ -124,10 +102,12 @@ class NERO_Character
 	# it sets the class to rogue if you attempt to change to a hobling as a fighter.
 	# Technically it should instead revert the race, but I felt that would be unintuitive for the user.
 	def race=( race )
-		if @character_class.name == 'Fighter' and race == 'Hobling'
-			self.character_class = 'Rogue'
-		end
 		@race.race= race
+		if @race.data.has_key?('Prohibited Classes') and @race.data['Prohibited Classes'].include?(@character_class.to_s)
+			@change_error = "A #{race} cannot be a #{@character_class.to_s}. Setting the class to the racial default."
+			$log.info "Resetting character class to the default class for the race, #{@race.data['Default Class']}"
+			@character_class = NERO_Class.new(@race.data['Default Class'])
+		end
 		@build.legalize
 	end
 
@@ -424,7 +404,7 @@ class NERO_Character
 '
 
 		@build.skills.each_with_index do |skill, i|
-			s += "\t<tr>\n\t\t<td align=\"right\"><span id=\"skill#{i}\">#{skill.name}</span></td>\n"
+			s += "\t<tr>\n\t\t<td align=\"right\"><span id=\"skill#{i}\">#{skill.to_s}</span></td>\n"
 			s += "\t\t<td align=\"center\"><span id=\skill#{i}_num\">#{skill.count}</span></td>\n"
     		s += "\t\t<td align=\"center\"><span id=\"skill#{i}_cost\">#{skill.cost}</span></td>\n"
     		s += "\t\t<td align=\"left\"><span id=\"skill#{i}_option\">"
@@ -467,7 +447,10 @@ class NERO_Character
 
 	def load filename
 		begin
-			yaml_parse = YAML.load(File.open(filename, 'r'))
+			yaml_parse = {}
+			File.open(filename, 'r') do |file|
+				yaml_parse = YAML.load(file)
+			end
 			info = yaml_parse['Info']
 			@player_name = info['Player Name']
 			@name = info['Character Name']
@@ -748,60 +731,7 @@ class Formal_Effects
 end
 
 
-class NERO_Class
-	@@class_list = %w(Fighter Rogue Scholar Templar)
-	@@class_initial_list = %w(F R S T)
-	def initialize(character_class = @@class_list[0])
-		@character_class = (@@class_list.include? character_class) ? character_class : @@class_list[0]
-	end
 
-	def name=(character_class)
-		character_class.capitalize!
-		if @@class_list.include?(character_class)
-			return @character_class = character_class
-		end
-		if (character_class.is_a?(Integer) and character_class < @@class_list.length)
-			return @character_class = @@class_list[character_class]
-		end
-		if @@class_initial_list.include?(character_class.to_s[0..0])
-				return @character_class = @@class_list[@@class_initial_list.index(character_class.to_s[0..0])]
-		end
-		return false
-	end
-
-	def name
-		return @character_class
-	end
-
-	def to_s
-		return @character_class
-	end
-end
-
-class NERO_Race
-	@@race_list = %w(Barbarian Biata Drae Dwarf Elf Gypsy Half\ Ogre Half\ Orc Hobling Human Mystic\ Wood\ Elf Sarr Scavenger)
-
-	attr_reader :race
-
-	def initialize(race = 'Human')
-		race = race.split.map! { |s| s.capitalize }.join ' '
-		@race = (@@race_list.include? race) ? race : @@race_list[0]
-	end
-
-	def to_s
-		return race
-	end
-
-	def race= race
-		if @@race_list.include? race
-			return @race = race
-		end
-		if race.is_a? Integer and race < @@race_list.length
-			return @race = @race_ary[race]
-		end
-		return false
-	end
-end
 
 
 # Local Testing
@@ -810,11 +740,11 @@ if __FILE__ == $0
 	$log.info "Testing character.rb"
 
 
-	$nero_skills = NERO_Skills.new
+	NERO_Data.initialize_statics 'ncc.yml'
 
-	$c = NERO_Character.new
+	c = NERO_Character.new
 
-	$c2 = NERO_Character.new('test.yml')
+	c2 = NERO_Character.new('test.yml')
 
 
 	require 'irb'

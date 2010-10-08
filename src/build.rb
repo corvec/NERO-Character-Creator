@@ -19,6 +19,7 @@
 =end
 
 require 'yaml'
+
 require 'nero_skills.rb'
 require 'character_skill.rb'
 
@@ -68,7 +69,7 @@ class Build
 	def skills
 		result = []
 		@skills.each do |skill|
-			result << skill if skill.skill.visible
+			result << skill unless skill.skill.spell
 		end
 
 		return result
@@ -79,9 +80,7 @@ class Build
 	##########################################################################################
 
 	def set_spell( spell, amount )
-		unless spell.is_a? String
-			spell = spell.name
-		end
+		spell = spell.to_s
 		$log.info "Build.set_spell(#{spell.inspect},#{amount.inspect})"
 		@spells[spell.split(' ')[0]][spell.split(' ')[1].to_i - 1] = amount
 		$log.debug "Build.set_spell() = #{self.spell(spell).inspect}"
@@ -149,7 +148,7 @@ class Build
 	# Returns true if the character has the proper skills needed
 	# to add spells.
 	def can_add_spells school
-		skill = $nero_skills.lookup( "#{school} 1" )
+		skill = NERO_Skill.lookup( "#{school} 1" )
 		cskill= Character_Skill.new(skill, {}, 1, $character)
 
 		if cskill.meets_prerequisites?
@@ -255,7 +254,7 @@ class Build
 	def to_s
 		s = "Build:\n"
 		@skills.each do |skill|
-			s << "   - #{skill.name}"
+			s << "   - #{skill.to_s}"
 			if skill.skill.limit != 1 or skill.skill.options.length > 0
 				s << ":\n"
 				if skill.skill.limit != 1
@@ -286,16 +285,16 @@ class Build
 		data = []
 		@skills.each do |skill|
 			if skill.skill.limit != 1 or skill.skill.options.length > 0
-				val = {skill.name => {}}
+				val = {skill.to_s => {}}
 				if skill.skill.limit != 1
-					val[skill.name]['Count'] = skill.count
+					val[skill.to_s]['Count'] = skill.count
 				end
 				skill.options.each do |o,v|
-					val[skill.name][o] = v
+					val[skill.to_s][o] = v
 				end
 				data << val
 			else
-				data << skill.name
+				data << skill.to_s
 			end
 		end
 		@spells.each do |school, tree|
@@ -337,7 +336,7 @@ class Build
 		end
 
 		unless skill.is_a? NERO_Skill
-			skill = $nero_skills.lookup(skill)
+			skill = NERO_Skill.lookup(skill)
 		end
 
 		$log.debug "Build.add_skill(#{skill.inspect},#{options.inspect},#{amount.inspect},#{force.inspect}) - Lookup completed."
@@ -349,25 +348,25 @@ class Build
 		end
 
 		# Skill is a spell
-		unless skill.visible
+		if skill.spell
 			return self.set_spell(skill, amount) if force
 			if amount != 1
-				@add_error = "Build.add_skill(#{skill.name.inspect}) - Cannot add spells through this dialog"
+				@add_error = "Build.add_skill(#{skill.to_s.inspect}) - Cannot add spells through this dialog"
 				return false
 			end
-			school = skill.name.split(' ')[0]
-			lvl = skill.name.split(' ')[1].to_i
+			school = skill.to_s.split(' ')[0]
+			lvl = skill.to_s.split(' ')[1].to_i
 			return self.increment_spell_slots(school, lvl-1)
 		end
 
 		unless options.is_a? Hash
-			options = parse_options(options,skill.name)
+			options = parse_options(options,skill.to_s)
 		end
 
-		$log.debug "Build.add_skill(#{skill.name.inspect}) - Skill requires #{skill.options.length} options"
+		$log.debug "Build.add_skill(#{skill.to_s.inspect}) - Skill requires #{skill.options.length} options"
 
 		if options.length < skill.options.length
-			$log.warn "Build.add_skill(#{skill.name.inspect}) - Insufficient options provided..."
+			$log.warn "Build.add_skill(#{skill.to_s.inspect}) - Insufficient options provided..."
 			@add_error = "Insufficient options provided: Please provide the following options: |"
 			skill.options.each do |o|
 				@add_error += " #{o} |"
@@ -378,17 +377,17 @@ class Build
 		char_skill = Character_Skill.new skill, options, amount, @character
 
 		if char_skill.cost == false
-			@add_error = "You cannot add #{skill.name} because it does not have a cost defined for your character.  It is most likely a racial ability."
-			if char_skill.name.match "Master Critical Attack" or char_skill.name.match 'Proficiency'
+			@add_error = "You cannot add #{skill.to_s} because it does not have a cost defined for your character.  It is most likely a racial ability."
+			if char_skill.to_s.match "Master Critical Attack" or char_skill.to_s.match 'Proficiency'
   				@add_error = "You cannot have a Master Critical Attack and a Proficiency in the same hand.  Upgrade your existing skill to a Master Proficiency instead."
 			end
-			$log.warn "Build.add_skill(#{skill.name.inspect}): Cost undefined."
+			$log.warn "Build.add_skill(#{skill.to_s.inspect}): Cost undefined."
 			return false
 		end
 
 		unless force
 			unless char_skill.meets_prerequisites?(self)
-				$log.warn "Build.add_skill(#{skill.name.inspect}): Prerequisites not met"
+				$log.warn "Build.add_skill(#{skill.to_s.inspect}): Prerequisites not met"
 				# Generate the error either way, in case the operation fails down the road: the user
 				# needs to know about the prerequisites
 				if $config.setting('Satisfy Prerequisites')
@@ -399,7 +398,7 @@ class Build
 						return false
 					end
 				else
-					@add_error = "You cannot add '#{skill.name}' because you are missing some prerequisite.  The prerequisites are: |"
+					@add_error = "You cannot add '#{skill.to_s}' because you are missing some prerequisite.  The prerequisites are: |"
 					spreqs = skill.prereqs.to_a
 					spreqs.each do |prereq|
 						if prereq.is_a? Array
@@ -415,8 +414,8 @@ class Build
 			end
 			@skills.each do |skill_to_check|
 				if char_skill.is_included_in?(skill_to_check.skill)
-					$log.warn "Build.add_skill(#{skill.name.inspect}): Skill included in #{skill_to_check.name.inspect}"
-					@add_error = "You cannot add '#{skill.name}' because it is included in #{skill_to_check.name}, which you already have."
+					$log.warn "Build.add_skill(#{skill.to_s.inspect}): Skill included in #{skill_to_check.to_s.inspect}"
+					@add_error = "You cannot add '#{skill.to_s}' because it is included in #{skill_to_check.to_s}, which you already have."
 					return false
 				end
 			end
@@ -424,11 +423,16 @@ class Build
 
 
 		force_add_skill(char_skill,force)
+		
+		# Check its includes and if they're present, delete them
+		unless force
+			self.delete_includes(skill,options)
+		end
 
 		# Enforce Build Total:
 		if !force and $config.setting('Enforce Build') and (self.calculate_cost() > @character.experience.build)
-			$log.warn "Build.add_skill(#{skill.name.inspect}): Not enough loose build."
-			@add_error = "You cannot add #{skill.name} because you do not have enough loose build!  You must have #{self.calculate_cost} total build to purchase this skill."
+			$log.warn "Build.add_skill(#{skill.to_s.inspect}): Not enough loose build."
+			@add_error = "You cannot add #{skill.to_s} because you do not have enough loose build!  You must have #{self.calculate_cost} total build to purchase this skill."
 			@add_error += "\nThis followed a successful #{@auto_add_error}\nAutomatically purchased skills have been removed." unless @auto_add_error.empty?
 			self.load_state build_data
 			@needs_commit = true
@@ -436,10 +440,6 @@ class Build
 		end
 
 
-		# Check its includes and if they're present, delete them
-		unless force
-			self.delete_includes(skill,options)
-		end
 		return true
 	end
 
@@ -455,8 +455,8 @@ class Build
 			char_skill = Character_Skill.new(skill,options,count,@character)
 		end
 
-		auto_add_error = "attempt to automatically add prerequisites for '#{skill.name}'.  The prerequisites are: ["
-		$log.info "Build.add_skill(#{skill.name.inspect}): Automatically purchasing prerequisites"
+		auto_add_error = "attempt to automatically add prerequisites for '#{skill.to_s}'.  The prerequisites are: ["
+		$log.info "Build.add_skill(#{skill.to_s.inspect}): Automatically purchasing prerequisites"
 		error_encountered = false
 
 		enforce_build_value = $config.setting('Enforce Build')
@@ -528,7 +528,7 @@ class Build
 
 	# Returns the cost currently spent upon the skills included by the listed skill
 	def includes_cost nero_skill
-		$log.debug "Build.includes_cost(#{nero_skill.name.inspect})"
+		$log.debug "Build.includes_cost(#{nero_skill.to_s.inspect})"
 		includes = nero_skill.get_all_includes()
 
 		cskills = self.find_skills(includes)
@@ -537,7 +537,7 @@ class Build
 		cskills.each do |cskill|
 			cost += cskill.cost
 		end
-		$log.debug "Build.includes_cost(#{nero_skill.name.inspect}) = #{cost.inspect}"
+		$log.debug "Build.includes_cost(#{nero_skill.to_s.inspect}) = #{cost.inspect}"
 		return cost
 	end
 
@@ -549,7 +549,7 @@ class Build
 			skills.each do |skill,ranks|
 				temp_cskill = self.lookup(skill)
 				next if temp_cskill.nil?
-				nskill = $nero_skills.lookup(skill)
+				nskill = NERO_Skill.lookup(skill)
 				cskill = Character_Skill.new(nskill, temp_cskill.options, ranks, @character)
 				skill_list << cskill unless cskill.nil?
 			end
@@ -573,7 +573,7 @@ class Build
 	def lookup skill, options = {}
 		$log.debug "Build.lookup(#{skill.inspect},{#{options.inspect}.inspect})"
 		@skills.each do |cskill|
-			if cskill.skill.name == skill
+			if cskill.skill.to_s == skill
 				match = true
 				options.each do |o,v|
 					match = false if cskill.options[o] != v
@@ -594,7 +594,7 @@ class Build
 	end
 
 	def delete_includes nero_skill, options
-		$log.info "Build.delete_includes(#{nero_skill.name.inspect}, #{options.inspect})"
+		$log.info "Build.delete_includes(#{nero_skill.to_s.inspect}, #{options.inspect})"
 
 		includes = nero_skill.get_all_includes()
 		if includes.is_a? Array
@@ -604,16 +604,16 @@ class Build
 		end
 		included_skills.each do |inc_skill|
 			if includes.is_a? Array
-				self.delete_skill(inc_skill.name, options, inc_skill.count)
+				self.delete_skill(inc_skill.to_s, options, inc_skill.count)
 			elsif includes.is_a? Hash
-				self.delete_skill(inc_skill.name, options, includes[inc_skill.name])
+				self.delete_skill(inc_skill.to_s, options, includes[inc_skill.to_s])
 			end
 		end
 		return true
 	end
 
 	def old_delete_includes skill, options, i=0
-		$log.info "Build.delete_includes(#{skill.name.inspect}, {#{options.inspect}}, #{i})"
+		$log.info "Build.delete_includes(#{skill.to_s.inspect}, {#{options.inspect}}, #{i})"
 		return if i > 5
 
 		
@@ -622,7 +622,7 @@ class Build
 			skill.includes.each do |inc_skill|
 				if inc_skill.is_a? String
 					self.delete_skill inc_skill, options
-					rec_skill =  $nero_skills.lookup(inc_skill)
+					rec_skill =  NERO_Skill.lookup(inc_skill)
 					self.delete_includes(rec_skill, options, i+1) if rec_skill.is_a? NERO_Skill
 				end
 			end
@@ -661,7 +661,7 @@ class Build
 
 			r = ['Other']
 			@skills.each do |s|
-				r += wh[s.skill.name] if wh.has_key?(s.skill.name)
+				r += wh[s.skill.to_s] if wh.has_key?(s.skill.to_s)
 			end
 			return r
 		else
@@ -677,7 +677,7 @@ class Build
 		$log.debug("Build.delete_skill() - @needs_commit = true")
 		@needs_commit = true
 		@skills.each do |cskill|
-			if cskill.skill.name == skill
+			if cskill.skill.to_s == skill
 				match = true
 				options.each do |o,v|
 					if cskill.options[o] != v
@@ -741,7 +741,7 @@ class Build
 		skills = []
 		@skills.each do |s|
 			if !s.meets_prerequisites?(self, 0) or s.cost == false
-				skills << s.skill.name
+				skills << s.skill.to_s
 			end
 		end
 		return skills
@@ -751,7 +751,7 @@ class Build
 	def count skill, options = {}
 		count = 0
 		@skills.each do |cskill|
-			if cskill.name == skill
+			if cskill.to_s == skill
 				options_match = true
 				options.each do |o,v|
 					if cskill.options[o] != v
@@ -782,11 +782,11 @@ class Build
 
 private
 	def force_add_skill(char_skill, force)
-		$log.debug("Build.force_add_skill(Character_Skill(#{char_skill.name.inspect},#{char_skill.count.inspect},#{char_skill.options.inspect}),#{force.inspect})")
-		if self.count(char_skill.name, char_skill.options) > 0
-			$log.info "Build.force_add_skill(#{char_skill.name.inspect}): Increasing existing skill to #{char_skill.count + self.count(char_skill.name, char_skill.options)}"
+		$log.debug("Build.force_add_skill(Character_Skill(#{char_skill.to_s.inspect},#{char_skill.count.inspect},#{char_skill.options.inspect}),#{force.inspect})")
+		if self.count(char_skill.to_s, char_skill.options) > 0
+			$log.info "Build.force_add_skill(#{char_skill.to_s.inspect}): Increasing existing skill to #{char_skill.count + self.count(char_skill.to_s, char_skill.options)}"
 			@skills.each do |s|
-				if s.name == char_skill.name
+				if s.to_s == char_skill.to_s
 					options_match = true
 					if char_skill.options != nil
 						char_skill.options.each do |o,v|
@@ -802,7 +802,7 @@ private
 				end
 			end
 		else
-			$log.info "Build.force_add_skill(#{char_skill.name.inspect},#{char_skill.count}): Adding new skill"
+			$log.info "Build.force_add_skill(#{char_skill.to_s.inspect},#{char_skill.count}): Adding new skill"
 			@needs_commit = true
 			$log.debug("Build.force_add_skill() - @needs_commit = true")
 			char_skill.actualize()
@@ -849,13 +849,12 @@ if __FILE__ == $0
 	$log = Logger.new('build.log',10,102400)
 	$log.info "Testing build.rb"
 
-	$nero_skills = NERO_Skills.new 'data/skills.yml'
+	NERO_Skills.add_skills 'data/skills.yml'
 
 
 	b = Build.new 'test.yml'
 	b.calculate_cost
 	$log.info b.count('One Handed Edged', {})
-	$b = b
 	b.add_skill("One Handed Edged")
 	o = {'Hand' => 'Left','Weapon' => 'Short Sword'}
 	b.add_skill("Proficiency",o)

@@ -1,28 +1,53 @@
 --- 
 Backstory: ""
 Experience: 
-- Build: 150
+- Experience: 54340
   Type: Reset
 Info: 
   Secondary School: Celestial
+  Class: Templar
+  Character Name: ""
+  Body Effects: []
+
+  Race: Elf
+  Death History: []
+
+  Subrace: Notari
   Primary School: Earth
   Spirit Effects: []
 
-  Created: 2010-07-27
-  Body Effects: []
-
-  Class: Scholar
-  Subrace: ""
-  Race: Human
-  Character Name: ""
-  Death History: []
-
+  Created: 2011-03-14
   Player Name: ""
 Build: 
-- Read and Write
 - First Aid
+- Read and Write
 - Healing Arts
 - Formal Magic (Earth): 
+    Count: 9
+- Read Magic
+- One Handed Edged
+- Shield
+- Proficiency: 
+    Count: 5
+    Hand: Right
+    Weapon: Long Sword
+- Critical Slay/Parry: 
+    Count: 1
+    Hand: Right
+    Weapon: Long Sword
+- Craftsman Other: 
+    Count: 1
+    Type: "Wilderness: Druid (Commune with Nature)"
+- Craftsman Other: 
+    Count: 1
+    Type: "Wilderness: Tracker"
+- Wear Extra Armor: 
+    Count: 2
+- Resist Charm: 
+    Count: 1
+- Resist Sleep: 
+    Count: 1
+- Celestial 1: 
     Count: 1
 - Earth 1: 
     Count: 4
@@ -37,8 +62,8 @@ Build:
 - Earth 6: 
     Count: 4
 - Earth 7: 
-    Count: 3
+    Count: 4
 - Earth 8: 
-    Count: 2
+    Count: 3
 - Earth 9: 
-    Count: 1
+    Count: 2

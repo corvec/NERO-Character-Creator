@@ -218,9 +218,9 @@ class ExperienceWidget < Qt::Widget
 
 	def update
 		slider_position = @experience_history.verticalScrollBar.sliderPosition
-		@experience_total.text = $character.experience.experience
-		@build_total.text = $character.experience.build
-		@loose_experience.text = $character.experience.loose
+		@experience_total.text = $character.experience.experience.to_s
+		@build_total.text = $character.experience.build.to_s
+		@loose_experience.text = $character.experience.loose.to_s
 
 		text = ''
 		$character.experience.trail.each do |trail|

@@ -1,0 +1,12 @@
+Skills:
+    Wear Extra Armor:
+        Max:
+            Fighter: 0
+            Rogue: 6
+            Scholar: 7
+            Templar: 4
+        Cost:
+            Fighter: 2
+            Rogue: 2
+            Scholar: 4
+            Templar: 2

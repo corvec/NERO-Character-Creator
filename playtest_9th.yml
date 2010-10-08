@@ -1,54 +1,55 @@
-Stop Thrust:
-   Cost: 2
-   Requires:
-      Proficiency: 2
-   Max: 0
-Two Long Weapons:
-  Requires:
-      - Two Weapons
-  Cost:
-      Fighter: 2
-      Rogue: 4
-      Scholar: 6
-      Templar: 4
-Waylay:
-   Max: 0
-   Cost:
-      Fighter: 6
-      Rogue: 3
-      Scholar: 6
-      Templar: 6
-Smithing:
-   Max: 0
-   Includes:
-      - [Armorsmith]
-      - [Weaponsmith]
-   Cost:
-      Dwarf Fighter: 2
-      Dwarf Rogue: 3
-      Dwarf Scholar: 3
-      Dwarf Templar: 2
-      Fighter: 3
-      Rogue: 4
-      Scholar: 4
-      Templar: 3
-Manifold:
-   Requires:
-      - Prepare Hearth
-   Cost:
-      Fighter: 9
-      Rogue: 6
-      Scholar: 3
-      Templar: 4
-Prepare Hearth:
-   Cost:
-      Fighter: 6
-      Rogue: 4
-      Scholar: 2
-      Templar: 3
-Hobling Dodge:
-   Cost:
-      Hobling: 10
-Strongarm:
-   Cost:
-      Half Orc: 10
+Skills:
+    Stop Thrust:
+       Cost: 2
+       Requires:
+          Proficiency: 2
+       Max: 0
+    Two Long Weapons:
+      Requires:
+          - Two Weapons
+      Cost:
+          Fighter: 2
+          Rogue: 4
+          Scholar: 6
+          Templar: 4
+    Waylay:
+       Max: 0
+       Cost:
+          Fighter: 6
+          Rogue: 3
+          Scholar: 6
+          Templar: 6
+    Smithing:
+       Max: 0
+       Includes:
+          - [Armorsmith]
+          - [Weaponsmith]
+       Cost:
+          Dwarf Fighter: 2
+          Dwarf Rogue: 3
+          Dwarf Scholar: 3
+          Dwarf Templar: 2
+          Fighter: 3
+          Rogue: 4
+          Scholar: 4
+          Templar: 3
+    Manifold:
+       Requires:
+          - Prepare Hearth
+       Cost:
+          Fighter: 9
+          Rogue: 6
+          Scholar: 3
+          Templar: 4
+    Prepare Hearth:
+       Cost:
+          Fighter: 6
+          Rogue: 4
+          Scholar: 2
+          Templar: 3
+    Hobling Dodge:
+       Cost:
+          Hobling: 10
+    Strongarm:
+       Cost:
+          Half Orc: 10

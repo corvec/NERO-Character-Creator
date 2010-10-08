@@ -1,7 +1,15 @@
-Hobling Dodge:
-   Cost:
-      Hobling: 10
-Strongarm:
-   Cost:
-      Half Orc: 10
-
+Races:
+    Hobling:
+        Racial Skills:
+            Hobling Dodge: 10
+    Half Orc:
+        Racial Skills:
+            Strongarm: 10
+    Half Ogre:
+        Racial Skills:
+            Strongarm: 10
+Skills:
+    Hobling Dodge:
+        Max: 1
+    Strongarm:
+        Max: 1

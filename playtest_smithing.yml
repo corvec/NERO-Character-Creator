@@ -1,15 +1,35 @@
-Smithing:
-   Max: 0
-   Includes:
-      - [Armorsmith]
-      - [Weaponsmith]
-   Cost:
-      Dwarf Fighter: 2
-      Dwarf Rogue: 3
-      Dwarf Scholar: 3
-      Dwarf Templar: 2
-      Fighter: 3
-      Rogue: 4
-      Scholar: 4
-      Templar: 3
+Skills:
+    Smithing:
+        Max: 0
+        Craftsman: true
+        Includes:
+            - [Armorsmith]
+            - [Weaponsmith]
+        Cost:
+            Fighter: 3
+            Rogue: 4
+            Scholar: 4
+            Templar: 3
+    Armorsmith:
+        Invisible: true
+        Max: 0
+        Craftsman: true
+        Cost:
+            Fighter: 3
+            Rogue: 4
+            Scholar: 4
+            Templar: 3
+    Weaponsmith:
+        Invisible: true
+        Max: 0
+        Craftsman: true
+        Cost:
+            Fighter: 3
+            Rogue: 4
+            Scholar: 4
+            Templar: 3
+Races:
+    Dwarf:
+        Reduced Cost for Skills:
+            - Smithing
 

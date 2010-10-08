@@ -1,15 +1,16 @@
-Manifold:
-   Requires:
-      - Prepare Hearth
-   Cost:
-      Fighter: 9
-      Rogue: 6
-      Scholar: 3
-      Templar: 4
-Prepare Hearth:
-   Cost:
-      Fighter: 6
-      Rogue: 4
-      Scholar: 2
-      Templar: 3
+Skills:
+    Manifold:
+       Requires:
+          - Prepare Hearth
+       Cost:
+          Fighter: 9
+          Rogue: 6
+          Scholar: 3
+          Templar: 4
+    Prepare Hearth:
+       Cost:
+          Fighter: 6
+          Rogue: 4
+          Scholar: 2
+          Templar: 3
 

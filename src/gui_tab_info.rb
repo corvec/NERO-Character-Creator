@@ -37,7 +37,7 @@ class InfoWidget < Qt::Widget
 			$character.date_created= Date.new(temp_date.year,temp_date.month,temp_date.day)
 		}
 
-		@race_list = %w(Barbarian Biata Drae Dwarf Elf Gypsy Half\ Ogre Half\ Orc Hobling Human Mystic\ Wood\ Elf Sarr Scavenger)
+		@race_list = NERO_Race.list
 		unless ['Line Edit','Text Box','Drop Down','Combo Box'].include? $config.setting('Race Entry')
 			$log.error "Could not interpret Race Entry setting (#{$config.setting})."
 			$config.update_setting('Race Entry','Text Box')
@@ -61,7 +61,10 @@ class InfoWidget < Qt::Widget
 				commit_need = $character.race.to_s != @race_entry.currentText
 				$character.race = @race_entry.currentText
 				@race_entry.current_index = @race_list.index($character.race.to_s)
-				self.commit() if commit_need
+				if commit_need
+					@class_entry.current_index = NERO_Class.list.index($character.character_class.to_s)
+					self.commit()
+				end
 			}
 		end
 
@@ -70,7 +73,6 @@ class InfoWidget < Qt::Widget
 			$character.subrace = @subrace_entry.text
 		}
 
-		@class_list = %w(Fighter Rogue Scholar Templar)
 		unless ['Line Edit','Text Box','Drop Down','Combo Box'].include? $config.setting('Class Entry')
 			$log.error "Could not interpret Class Entry setting (#{$config.setting})."
 			$config.update_setting('Class Entry','Text Box')
@@ -78,8 +80,8 @@ class InfoWidget < Qt::Widget
 		case $config.setting 'Class Entry'
 		when 'Line Edit','Text Box' then
 			@class_entry = Qt::LineEdit.new(nil)
-			class_completer = Qt::Completer.new(@class_list,nil)
-			class_completer.completionMode = Qt::Completer::InlineCompletion#UnfilteredPopupCompletion
+			class_completer = Qt::Completer.new(NERO_Class.class_list,nil)
+			class_completer.completionMode = Qt::Completer::InlineCompletion
 			@class_entry.setCompleter(class_completer)
 			@class_entry.connect(SIGNAL(:editingFinished)) {
 				commit_need = $character.character_class.to_s != @class_entry.text
@@ -89,40 +91,42 @@ class InfoWidget < Qt::Widget
 			}
 		when 'Drop Down','Combo Box' then
 			@class_entry = Qt::ComboBox.new(nil)
-			@class_entry.add_items @class_list
+			@class_entry.add_items NERO_Class.list
 			@class_entry.connect(SIGNAL('currentIndexChanged(int)')) {
 				commit_need = $character.character_class.to_s != @class_entry.currentText
 				$character.character_class = @class_entry.currentText
-				@class_entry.current_index = @class_list.index($character.character_class.to_s)
+				@class_entry.current_index = NERO_Class.list.index($character.character_class.to_s)
 				self.commit() if commit_need
 			}
 		end
 
-		@primary_school_entry = Qt::LineEdit.new(nil)
-		school_list = %w(Earth Celestial Nature)
-		school_completer = Qt::Completer.new(school_list,nil)
-		school_completer.completionMode = Qt::Completer::InlineCompletion#UnfilteredPopupCompletion
-		@primary_school_entry.setCompleter(school_completer)
-		@primary_school_entry.connect(SIGNAL(:editingFinished)) {
-			school_init = @primary_school_entry.text[0..0]
-			if %w(E C N).include? school_init
-				$character.primary = school_list[ %w(E C N).index(school_init) ]
-			end
-			@primary_school_entry.text = $character.primary
-			@secondary_school_entry.text = $character.secondary
-			self.commit()
+		# Primary and Secondary schools:
+		school_list = NERO_Skill.schools()
+
+		@primary_school_entry = Qt::ComboBox.new(nil)
+		@primary_school_entry.add_items school_list
+
+		@secondary_school_entry = Qt::ComboBox.new(nil)
+		@secondary_school_entry.add_items school_list
+
+		@primary_school_entry.current_index = school_list.index($character.primary).to_i
+		@secondary_school_entry.current_index = school_list.index($character.secondary).to_i
+
+		@primary_school_entry.connect(SIGNAL('currentIndexChanged(int)')) {
+			commit_need = $character.primary == @primary_school_entry.currentText
+			$character.primary = @primary_school_entry.currentText
+			@primary_school_entry.current_index = school_list.index($character.primary)
+			@secondary_school_entry.current_index = school_list.index($character.secondary)
+			self.commit() if commit_need
 		}
-		@secondary_school_entry = Qt::LineEdit.new(nil)
-		@secondary_school_entry.setCompleter(school_completer)
-		@secondary_school_entry.connect(SIGNAL(:editingFinished)) {
-			school_init = @secondary_school_entry.text[0..0]
-			if %w(E C N).include? school_init
-				$character.secondary = school_list[ %w(E C N).index(school_init) ]
-			end
-			@primary_school_entry.text = $character.primary
-			@secondary_school_entry.text = $character.secondary
-			self.commit()
+		@secondary_school_entry.connect(SIGNAL('currentIndexChanged(int)')) {
+			commit_need = $character.secondary == @secondary_school_entry.currentText
+			$character.secondary = @secondary_school_entry.currentText
+			@primary_school_entry.current_index = school_list.index($character.primary)
+			@secondary_school_entry.current_index = school_list.index($character.secondary)
+			self.commit() if commit_need
 		}
+
 		@level_label = Qt::Label.new('2',nil)
 		@body_label = Qt::Label.new('5',nil)
 
@@ -232,8 +236,8 @@ class InfoWidget < Qt::Widget
 		body_frame.frameShadow= Qt::Frame::Raised
 		body_frame.frameShape= Qt::Frame::StyledPanel
 
-		@spirit_layout = FormalMagicEffects.new(spirit_frame,'Spirit',school_completer)
-		@body_layout   = FormalMagicEffects.new(body_frame,'Body',school_completer)
+		@spirit_layout = FormalMagicEffects.new(spirit_frame,'Spirit')
+		@body_layout   = FormalMagicEffects.new(body_frame,'Body')
 
 		formal_layout.addWidget(spirit_frame)
 		formal_layout.addWidget(body_frame)
@@ -249,6 +253,11 @@ class InfoWidget < Qt::Widget
 	end
 
 	def commit
+		unless $character.change_error.nil?
+			err = Qt::MessageBox.new(nil,"Error Making a Change",$character.change_error)
+			err.show
+			$character.change_error = nil
+		end
 		$tabs.each do |tab|
 			tab.update
 		end
@@ -279,13 +288,14 @@ class InfoWidget < Qt::Widget
 		when 'Line Edit', 'Text Box' then
 			@class_entry.text= $character.character_class.to_s
 		when 'Drop Down', 'Combo Box' then
-			@class_entry.current_index = @class_list.index($character.character_class.to_s)
+			@class_entry.current_index = NERO_Class.list.index($character.character_class.to_s)
 		end
 
-		@primary_school_entry.text= $character.primary
-		@secondary_school_entry.text= $character.secondary
-		@level_label.text= $character.experience.level
-		@body_label.text= $character.calculate_body.to_i
+		school_list = NERO_Skill.schools()
+		@primary_school_entry.current_index = school_list.index($character.primary)
+		@secondary_school_entry.current_index = school_list.index($character.secondary)
+		@level_label.text= $character.experience.level.to_s
+		@body_label.text= $character.calculate_body.to_i.to_s
 
 		@spirit_layout.update()
 		@body_layout.update()
@@ -298,11 +308,8 @@ end
 
 class FormalMagicEffects < Qt::GridLayout
 
-	def initialize(parent=nil,location='Spirit',school_completer=nil)
+	def initialize(parent=nil,location='Spirit')
 		super(parent)
-		if school_completer == nil
-			school_completer = Qt::Completer.new(%w(Earth Celestial Nature))
-		end
 
 		restriction_completer = Qt::Completer.new(%w(Unrestricted Restricted Local\ Chapter\ Only LCO))
 		restriction_completer.completionMode= Qt::Completer::InlineCompletion
@@ -341,13 +348,14 @@ class FormalMagicEffects < Qt::GridLayout
 				self.effects.set_expiration(i,Date.new(td.year,td.month,td.day))
 			}
 
-			@school_widgets << Qt::LineEdit.new('',nil)
-			@school_widgets[i].setCompleter(school_completer)
+			school_list = NERO_Skill.schools()
+			@school_widgets << Qt::ComboBox.new(nil)
+			@school_widgets[i].add_items school_list
+			@school_widgets[i].connect(SIGNAL('currentIndexChanged(int)')) {
+				self.effects.set_school(i,@school_widgets[i].currentText)
+			}
 			self.addWidget(@school_widgets[i],i+2,2)
 
-			@school_widgets[i].connect(SIGNAL(:editingFinished)) {
-				self.effects.set_school(i,@school_widgets[i].text)
-			}
 
 			@restriction_widgets << Qt::LineEdit.new('',nil)
 			@restriction_widgets[i].setCompleter(restriction_completer)
@@ -374,7 +382,7 @@ class FormalMagicEffects < Qt::GridLayout
 				date = Qt::Date.new exp.year, exp.month, exp.day
 			end
 			@expire_widgets[i].date= date
-			@school_widgets[i].text = self.effects.get_school i
+			@school_widgets[i].current_index = NERO_Skill.schools.index(self.effects.get_school(i)).to_i
 			@restriction_widgets[i].text = self.effects.get_restriction i
 		end
 	end

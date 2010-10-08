@@ -22,11 +22,16 @@ require 'rubygems'
 require 'Qt4'
 require 'date'
 require 'optparse'
+require 'win32/dir' if RUBY_PLATFORM.include?('win32') or RUBY_PLATFORM.include?('i386-mingw32')
+
+if Dir.pwd() != File.expand_path(File.dirname(__FILE__))
+	$LOAD_PATH << File.expand_path(File.dirname(__FILE__))
+end
 
 require 'character.rb'
 require 'build.rb'
 require 'character_skill.rb'
-require 'nero_skills.rb'
+require 'nero_data.rb'
 require 'config.rb'
 require 'log.rb'
 require 'gui.rb'
@@ -37,16 +42,6 @@ if __FILE__ == $0
 	$log.info "Starting NERO Character Creator (by Corvec!)..."
 
 
-=begin
-	OptionParser.new do |opts|
-		opts.banner = "Usage: ncc.exe [options]"
-
-		opts.on "--config [CONFIG]", "Load custom configuration file" do |config|
-			$config = NERO_Config.new(config)
-		end
-	end.parse! ARGV
-=end
-
 	ARGV.each do |arg|
 		if File.exists?(arg)
 			$config = NERO_Config.new(arg) if $config.nil?
@@ -54,17 +49,22 @@ if __FILE__ == $0
 		end
 	end
 
-	$data_path = "#{Dir.getwd()}/"
-	$config = NERO_Config.new($data_path + 'ncc.ini') if $config.nil?
+	$config = NERO_Config.new('ncc.ini') if $config.nil?
 
 	init_log()
 
-	$config.chdir()
+	NERO_Data.initialize_statics($config.setting('Main Module'))
 
-	$nero_skills = NERO_Skills.new($data_path + 'skills.yml')
 	$character = NERO_Character.new()
 	if not defined?(Ocra)
 		app = Qt::Application.new(ARGV)
+
+		unless NERO_Data.initialized?
+			err = Qt::MessageBox.new(nil,"Error loading...","Failed to load main data module, #{$config.setting('Main Module')}")
+			err.show
+			exit
+		end
+
 		my_widget = BaseWidget.new()
 		my_widget.show()
 		begin
