@@ -163,10 +163,10 @@ class InfoWidget < Qt::Widget
 
 
 		# Death data
-		deaths_layout.addWidget(Qt::Label.new('Death History',nil),0,0,1,2)
+		deaths_layout.addWidget(Qt::Label.new('Death History',nil),0,0,1,3)
 		@death_history_box = Qt::TextEdit.new(nil)
 		@death_history_box.readOnly= true
-		deaths_layout.addWidget(@death_history_box,1,0,1,2)
+		deaths_layout.addWidget(@death_history_box,1,0,1,3)
 
 		death_banner = Qt::HBoxLayout.new(nil)
 		death_banner.addWidget(Qt::Label.new('White Stones:'))
@@ -176,7 +176,7 @@ class InfoWidget < Qt::Widget
 		@black_stones = Qt::Label.new('0')
 		death_banner.addWidget(@black_stones)
 
-		deaths_layout.addLayout(death_banner,2,0,1,2)
+		deaths_layout.addLayout(death_banner,2,0,1,3)
 
 		@button_add_death = Qt::PushButton.new('Add Death')
 		@button_buy_back_death = Qt::PushButton.new('Buy Back Death')
@@ -192,6 +192,7 @@ class InfoWidget < Qt::Widget
 			@black_stones.text = $character.death_history.black_stones.to_s
 			@white_stones.text = $character.death_history.white_stones.to_s
 			@death_history_box.text = $character.death_history.to_text
+			self.commit()
 		}
 
 		@button_buy_back_death.connect(SIGNAL(:clicked)) {
@@ -200,6 +201,7 @@ class InfoWidget < Qt::Widget
 			@black_stones.text = $character.death_history.black_stones.to_s
 			@white_stones.text = $character.death_history.white_stones.to_s
 			@death_history_box.text = $character.death_history.to_text
+			self.commit()
 		}
 
 		@button_spirit_forge.connect(SIGNAL(:clicked)) {
@@ -208,6 +210,7 @@ class InfoWidget < Qt::Widget
 			@black_stones.text = $character.death_history.black_stones.to_s
 			@white_stones.text = $character.death_history.white_stones.to_s
 			@death_history_box.text = $character.death_history.to_text
+			self.commit()
 		}
 
 		@button_del_death.connect(SIGNAL(:clicked)) {
@@ -215,14 +218,15 @@ class InfoWidget < Qt::Widget
 			@black_stones.text = $character.death_history.black_stones.to_s
 			@white_stones.text = $character.death_history.white_stones.to_s
 			@death_history_box.text = $character.death_history.to_text
+			self.commit()
 		}
 
 
 		deaths_layout.addWidget(@button_add_death)
 		deaths_layout.addWidget(@button_buy_back_death)
 		deaths_layout.addWidget(@button_spirit_forge)
-		deaths_layout.addWidget(@death_date)
-		deaths_layout.addWidget(@button_del_death)
+		deaths_layout.addWidget(@death_date,4,0,1,3)
+		deaths_layout.addWidget(@button_del_death,5,0,1,3)
 
 		info_and_deaths_layout.addWidget(info_frame)
 		info_and_deaths_layout.addWidget(deaths_frame)
@@ -244,6 +248,14 @@ class InfoWidget < Qt::Widget
 
 		base_layout.addLayout(info_and_deaths_layout)
 		base_layout.addLayout(formal_layout)
+
+		Qt::Widget.set_tab_order(@name_entry,@creation_entry)
+		Qt::Widget.set_tab_order(@creation_entry,@race_entry)
+		Qt::Widget.set_tab_order(@secondary_school_entry,@death_date)
+		Qt::Widget.set_tab_order(@death_date,@button_add_death)
+		Qt::Widget.set_tab_order(@button_add_death,@button_buy_back_death)
+		Qt::Widget.set_tab_order(@button_buy_back_death,@button_spirit_forge)
+		Qt::Widget.set_tab_order(@button_spirit_forge,@button_del_death)
 	end
 
 	def startup

@@ -182,7 +182,7 @@ class BaseWidget < Qt::Widget
 			widgets << Qt::Label.new('<b><font size="14">NERO Character Creator</font></b>',nil)
 			widgets.last.alignment = Qt::AlignCenter
 			#widgets.last.textFormat = Qt::RichText
-			widgets << Qt::Label.new('Version 0.9.6',nil)
+			widgets << Qt::Label.new('Version 0.9.7 (Released 2011 March 29)',nil)
 			widgets.last.alignment = Qt::AlignCenter
 			widgets << Qt::Label.new('by Corey T Kump',nil)
 			widgets.last.alignment = Qt::AlignCenter

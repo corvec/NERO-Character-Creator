@@ -105,9 +105,12 @@ class NERO_Race
 	def skill_cost_modifiers skill
 		mods = []
 
-		mods << :doubled if @data.has_key?('Double Cost for Skills') and @data['Double Cost for Skills'].include? skill
-		mods << :halved  if @data.has_key?('Half Cost for Skills') and @data['Half Cost for Skills'].include? skill
-		mods << :reduced if @data.has_key?('Reduced Cost for Skills') and @data['Reduced Cost for Skills'].include? skill
+		([skill] + NERO_Skill.lookup(skill).types).each do |cat|
+
+			mods << :doubled if @data.has_key?('Double Cost for Skills') and @data['Double Cost for Skills'].include? cat
+			mods << :halved  if @data.has_key?('Half Cost for Skills') and @data['Half Cost for Skills'].include? cat
+			mods << :reduced if @data.has_key?('Reduced Cost for Skills') and @data['Reduced Cost for Skills'].include? cat
+		end
 		
 		return mods
 	end

@@ -92,6 +92,14 @@ class BuildWidget < Qt::Widget
 			@skill_entry = Qt::ComboBox.new(nil)
 			@skill_entry.add_items skill_list
 
+
+			# This allows pressing Enter to add the skill, but disables pressing letters to select the option
+			#@skill_entry.editable = true
+			#@skill_entry.lineEdit.readOnly = true
+			#@skill_entry.lineEdit.connect(SIGNAL(:returnPressed)) do
+				#self.add_entered_skill()
+			#end
+
 			@skill_entry.connect(SIGNAL('currentIndexChanged(int)')) {
 				skill = NERO_Skill.lookup(@skill_entry.current_text)
 
@@ -114,15 +122,24 @@ class BuildWidget < Qt::Widget
 					skill_options_layout.addWidget(spacer_label)
 				else
 					skill_entry_button.enabled = true
-					skill.options.each do |o|
+					skill.options.each_with_index do |o,i|
 						o_label = Qt::Label.new(o,nil)
 						#If this has a specific set of entries
 						valid_values = $character.build.valid_option_values(o)
 						if valid_values.nil?
 							o_entry = Qt::LineEdit.new(nil)
+							o_entry.connect(SIGNAL(:returnPressed)) do
+								self.add_entered_skill()
+							end
 						else
 							o_entry = Qt::ComboBox.new(nil)
 							o_entry.add_items valid_values
+							# This allows pressing Enter to add the skill, but disables pressing letters to select the option
+							#o_entry.editable = true
+							#o_entry.lineEdit.readOnly = true
+							#o_entry.lineEdit.connect(SIGNAL(:returnPressed)) do
+								#self.add_entered_skill()
+							#end
 						end
 
 						option_widgets << o_label
@@ -132,8 +149,14 @@ class BuildWidget < Qt::Widget
 
 						skill_options_layout.addWidget(o_label)
 						skill_options_layout.addWidget(o_entry)
+
+						if i == 0
+							Qt::Widget.set_tab_order(@skill_entry,o_entry)
+						else
+							Qt::Widget.set_tab_order(@option_entries[skill.options[i-1]],o_entry)
+						end
 					end
-					option_widgets[1].setFocus
+					#@option_widgets[1].setFocus
 				end
 				skill_options_frame.updateGeometry()
 				skill_options_frame.repaint()
@@ -389,6 +412,7 @@ class SpellTreeLayout < Qt::GridLayout
 			@tree[i].setAlignment Qt::AlignHCenter
 			@tree[i].readOnly = true
 			@tree[i].toolTip = "Cost: #{@base_cost * $character.build.spell_cost(i)}"
+			@tree[i].setFocusPolicy(Qt::NoFocus)
 			self.addWidget(@tree[i],1,i+(i/3),Qt::AlignCenter)
 
 			@plus[i] = Qt::PushButton.new('+',nil)

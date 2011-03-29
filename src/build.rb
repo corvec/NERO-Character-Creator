@@ -641,23 +641,28 @@ class Build
 		end
 	end
 
+	def weapon_hash
+		wh = {'Archery'=>['Bow','Crossbow'],
+			'One Handed Blunt'=>['Sap','Bludgeon','Short Hammer','Long Hammer','Short Mace','Long Mace'],
+			'One Handed Edged'=>['Dagger','Hatchet','Short Sword','Long Sword','Short Axe','Long Axe'],
+			'Polearm'=>['Polearm'],#'Two Handed Axe','Halberd','Scythe','Bardiche','Guisarme','Glaive'],
+			'Small Weapon'=>['Sap','Bludgeon','Dagger','Hatchet','Small Hammer'],
+			'Staff'=>['Staff'],
+			'Thrown Weapon'=>['Throwing Dagger','Javelin','Throwing Rock'],
+			'Two Handed Blunt'=>['Two Handed Blunt'],
+			'Two Handed Sword'=>['Two Handed Sword']}
+		wh['One Handed Weapon Master'] = wh['One Handed Edged'] + wh['One Handed Blunt']
+		wh['Two Handed Weapon Master'] = wh['Polearm'] + wh['Two Handed Blunt'] + wh['Two Handed Sword']
+		wh['Weapon Master'] = wh['One Handed Weapon Master'] + wh['Two Handed Weapon Master']
+		return wh
+	end
+
 	def valid_option_values option
 		case option
 		when 'Hand'
 			['Right','Left']
 		when 'Weapon'
-			wh = {'Archery'=>['Bow','Crossbow'],
-				'One Handed Blunt'=>['Sap','Bludgeon','Short Hammer','Long Hammer','Short Mace','Long Mace'],
-				'One Handed Edged'=>['Dagger','Hatchet','Short Sword','Long Sword','Short Axe','Long Axe'],
-				'Polearm'=>['Polearm'],#'Two Handed Axe','Halberd','Scythe','Bardiche','Guisarme','Glaive'],
-				'Small Weapon'=>['Sap','Bludgeon','Dagger','Hatchet','Small Hammer'],
-				'Staff'=>['Staff'],
-				'Thrown Weapon'=>['Throwing Dagger','Javelin','Throwing Rock'],
-				'Two Handed Blunt'=>['Two Handed Blunt'],
-				'Two Handed Sword'=>['Two Handed Sword']}
-			wh['One Handed Weapon Master'] = wh['One Handed Edged'] + wh['One Handed Blunt']
-			wh['Two Handed Weapon Master'] = wh['Polearm'] + wh['Two Handed Blunt'] + wh['Two Handed Sword']
-			wh['Weapon Master'] = wh['One Handed Weapon Master'] + wh['Two Handed Weapon Master']
+			wh = self.weapon_hash
 
 			r = ['Other']
 			@skills.each do |s|
@@ -778,6 +783,40 @@ class Build
 		o = options.clone
 		o.delete 'Weapon'
 		return self.count('Master Critical Slay/Parry',o)
+	end
+
+	# Counts two handed melee weapon profs
+	# Returns 0 if the player does not have any
+	# Returns -1 if the player does not have the skill to use one
+	# Note that the options parameter is for uniformity and is not used
+	def count_2hprofs options=nil
+		# Check to see if the character has skill in a two handed weapon:
+		count = -1
+		self.skills.each do |check|
+			if check.is_a?(Character_Skill) and check.fulfills_prereq?('Two Handed Weapon')
+				count = 0
+				break
+			end
+		end
+
+		if count == -1
+			$log.debug("Build.count_2hprofs() returning -1")
+			return -1
+		end
+		count = 0
+		count += self.count('Master Proficiency')
+
+
+		weapons = self.weapon_hash['Two Handed Weapon Master']
+
+		count += self.count('Proficiency',{'Weapon'=>'Polearm'})
+		count += self.count('Proficiency',{'Weapon'=>'Staff'})
+		count += self.count('Proficiency',{'Weapon'=>'Two Handed Sword'})
+		count += self.count('Proficiency',{'Weapon'=>'Two Handed Blunt'})
+
+		$log.debug("Build.count_2hprofs() returning #{count}")
+
+		return count
 	end
 
 private

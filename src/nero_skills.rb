@@ -42,6 +42,7 @@ class NERO_Skill
 				prop['Cost'],
 				prop['Requires'],
 				prop['Includes'],
+				prop['Types'],
 				prop['Options'],
 				prop['Max'],
 				prop['Scholarly'],
@@ -75,6 +76,7 @@ class NERO_Skill
 					costs_prop,          #cost hash
 					reqs_prop,           #requirements list
 					nil,                 #includes list
+					nil,                 #
 					nil,                 #options
 					0,                   #max
 					false,               #scholarly
@@ -131,6 +133,7 @@ class NERO_Skill
 		end
 	end
 
+	# Returns a NERO_Skill object by that name
 	def NERO_Skill::lookup skill
 		if @@skills.has_key? skill.to_s
 			return @@skills[skill.to_s]
@@ -140,13 +143,14 @@ class NERO_Skill
 	##################################
 	# Instance Methods:
 	##################################
-	attr_reader :name, :cost, :prereqs, :includes, :options, :limit, :scholarly, :craftsman, :prohibits, :visible, :spell
+	attr_reader :name, :cost, :prereqs, :includes, :types, :options, :limit, :scholarly, :craftsman, :prohibits, :visible, :spell
 
 	def initialize(
 		skill_name,
 		cost,
 		prereqs = nil,
 		includes = nil,
+		types = nil,
 		options = nil,
 		limit = nil,
 		scholarly = nil,
@@ -176,6 +180,7 @@ class NERO_Skill
 
 		@prereqs = []
 		@includes = []
+		@types = []
 		@options = []
 		@limit = 1
 		@scholarly = false
@@ -185,6 +190,7 @@ class NERO_Skill
 
 		@prereqs   = prereqs   unless prereqs.nil?
 		@includes  = includes  unless includes.nil?
+		@types     = types     unless types.nil?
 		@options   = options   unless options.nil?
 		@limit     = limit     unless limit.nil?
 		@scholarly = scholarly unless scholarly.nil?

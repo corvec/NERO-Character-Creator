@@ -1,69 +1,76 @@
 --- 
 Backstory: ""
 Experience: 
-- Experience: 54340
+- Build: 213
   Type: Reset
+- Experience: 7049
+  Type: Reset
+- Number: 1.0
+  Times: 52
+  Type: Custom
 Info: 
-  Secondary School: Celestial
+  Secondary School: Earth
   Class: Templar
-  Character Name: ""
-  Body Effects: []
-
-  Race: Elf
+  Character Name: Grom
+  Body Effects: 
+  - School: Earth
+    Restriction: ""
+    Expires: 2013-03-31
+    Effect: Glorn-Ridden (Base)
+  Race: Half Orc
   Death History: []
 
-  Subrace: Notari
-  Primary School: Earth
-  Spirit Effects: []
-
-  Created: 2011-03-14
-  Player Name: ""
+  Subrace: ""
+  Primary School: Celestial
+  Spirit Effects: 
+  - School: ""
+    Restriction: ""
+    Expires: 2013-03-31
+    Effect: Spirit Link to Hat
+  - School: ""
+    Restriction: ""
+    Expires: 2013-03-31
+    Effect: Spirit Link to Sword
+  - School: ""
+    Restriction: ""
+    Expires: 2013-03-31
+    Effect: Spirit Link to Shield
+  - School: Earth
+    Restriction: ""
+    Expires: 2013-03-31
+    Effect: Vengeance (250 Points, 7 Charges Left)
+  - School: Earth
+    Restriction: ""
+    Expires: 2013-03-31
+    Effect: Transform to Master Lich
+  Created: 2011-04-01
+  Player Name: Clinton Bernier
 Build: 
-- First Aid
 - Read and Write
-- Healing Arts
-- Formal Magic (Earth): 
-    Count: 9
 - Read Magic
 - One Handed Edged
 - Shield
+- Strong Arm
 - Proficiency: 
-    Count: 5
-    Hand: Right
-    Weapon: Long Sword
-- Critical Slay/Parry: 
-    Count: 1
-    Hand: Right
-    Weapon: Long Sword
-- Craftsman Other: 
-    Count: 1
-    Type: "Wilderness: Druid (Commune with Nature)"
-- Craftsman Other: 
-    Count: 1
-    Type: "Wilderness: Tracker"
-- Wear Extra Armor: 
-    Count: 2
-- Resist Charm: 
-    Count: 1
-- Resist Sleep: 
-    Count: 1
-- Celestial 1: 
-    Count: 1
-- Earth 1: 
-    Count: 4
-- Earth 2: 
-    Count: 4
-- Earth 3: 
-    Count: 4
-- Earth 4: 
-    Count: 4
-- Earth 5: 
-    Count: 4
-- Earth 6: 
-    Count: 4
-- Earth 7: 
-    Count: 4
-- Earth 8: 
     Count: 3
-- Earth 9: 
-    Count: 2
+    Hand: Right
+    Weapon: Long Sword
+- One Handed Block
+- Celestial 1: 
+    Count: 4
+- Celestial 2: 
+    Count: 4
+- Celestial 3: 
+    Count: 4
+- Celestial 4: 
+    Count: 4
+- Celestial 5: 
+    Count: 4
+- Celestial 6: 
+    Count: 4
+- Celestial 7: 
+    Count: 4
+- Celestial 8: 
+    Count: 4
+- Celestial 9: 
+    Count: 4

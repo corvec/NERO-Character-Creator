@@ -54,6 +54,7 @@ if __FILE__ == $0
 	init_log()
 
 	NERO_Data.initialize_statics($config.setting('Main Module'))
+	$log.info "Finished initializing game data..."
 
 	$character = NERO_Character.new()
 	if not defined?(Ocra)

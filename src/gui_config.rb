@@ -56,7 +56,7 @@ class ConfigWidget < Qt::Dialog
 
 		@inputs = {}
 
-		@line_edits = ['Title','Skill Data','Working Directory','Autosave','Save Directory','Export','Log Output','Log Size','Log Count']
+		@line_edits = ['Title','Main Module','Working Directory','Autosave','Save Directory','Export','Log Output','Log Size','Log Count']
 		@line_edits.each do |setting|
 			@inputs[setting] = Qt::LineEdit.new($config.setting(setting).to_s,nil)
 		end
@@ -84,7 +84,7 @@ class ConfigWidget < Qt::Dialog
 		@inputs['Log Threshold'] = Qt::ComboBox.new(nil)
 		threshold_list = ['Fatal Errors','Errors','Warnings','Information','Debug Data']
 		@inputs['Log Threshold'].add_items(threshold_list)
-		@inputs['Log Threshold'].current_index = threshold_list.index $config.setting('Log Threshold')
+		@inputs['Log Threshold'].current_index = threshold_list.index($config.setting('Log Threshold')).to_i
 
 		entry_list = ['Drop Down','Text Box']
 		@inputs['Race Entry'] = Qt::ComboBox.new(nil)
@@ -124,6 +124,11 @@ class ConfigWidget < Qt::Dialog
 
 		(0...@inputs['Modules'].count).each do |i|
 			data["Module #{i+1}"] = @inputs['Modules'].item(i).text
+		end
+
+		num = @inputs['Modules'].count
+		until $config.setting("Module #{num+1}").nil?
+			$config.update_setting("Module #{num+1}",nil)
 		end
 
 		# Update config object
@@ -198,8 +203,8 @@ class ConfigGameData < Qt::Widget
 		@layout = Qt::GridLayout.new(self)
 
 		@layout.add_widget(Qt::Label.new('Game Data Filename',nil),0,0)
-		@layout.add_widget(@inputs['Skill Data'],0,1)
-		@layout.add_widget(BrowseButton.new(@inputs['Skill Data'],false,@inputs['Working Directory']),0,2)
+		@layout.add_widget(@inputs['Main Module'],0,1)
+		@layout.add_widget(BrowseButton.new(@inputs['Main Module'],false,@inputs['Working Directory']),0,2)
 
 		@layout.add_widget(Qt::Label.new('Game Data Directory',nil),1,0)
 		@layout.add_widget(@inputs['Working Directory'],1,1)

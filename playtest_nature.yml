@@ -1,48 +1,129 @@
-Schools of Magic:
-    Nature:
-        Requires: Runes of Nature
-Spell Costs:
-    Fighter: [3, 3, 6, 6, 9, 9, 12, 12, 15]
-    Rogue:   [2, 2, 4, 4, 6, 6, 8, 8, 10]
-    Scholar: [1, 1, 2, 2, 3, 3, 4, 4, 5]
-    Templar: [1, 1, 2, 3, 3, 4, 5, 5, 6]
-Skills:
-    Commune with Nature:
-       Cost:
-          Fighter: 6
-          Rogue: 6
-          Scholar: 3
-          Templar: 3
-    Create Runes:
-       Requires:
-          - Nature 1
-       Cost:
-          Fighter: 6
-          Rogue: 5
-          Scholar: 3
-          Templar: 4
-    "Formal Magic (Nature)":
-       Max: 0
-       Requires:
-          - Nature 9
-       Cost:
-          Fighter:
-            Primary: 12
-            Secondary: 24
-          Rogue:
-            Primary: 8
-            Secondary: 16
-          Scholar:
-            Primary: 4
-            Secondary: 8
-          Templar:
-            Primary: 4
-            Secondary: 8
-    Runes of Nature:
-       Requires:
-          - Commune with Nature
-       Cost:
-          Fighter: 8
-          Rogue: 6
-          Scholar: 4
-          Templar: 4
+Commune with Nature:
+   Cost:
+      Fighter: 6
+      Rogue: 6
+      Scholar: 3
+      Templar: 3
+Create Runes:
+   Requires:
+      - Nature 1
+   Cost:
+      Fighter: 6
+      Rogue: 5
+      Scholar: 3
+      Templar: 4
+"Formal Magic (Nature)":
+   Max: 0
+   Requires:
+      - Nature 9
+   Cost:
+      Fighter:
+        Primary: 12
+        Secondary: 24
+      Rogue:
+        Primary: 8
+        Secondary: 16
+      Scholar:
+        Primary: 4
+        Secondary: 8
+      Templar:
+        Primary: 4
+        Secondary: 8
+Nature 1:
+   Max: 0
+   Requires:
+      - Runes of Nature
+   Invisible: True
+   Cost:
+      Fighter: 3
+      Rogue: 2
+      Scholar: 1
+      Templar: 1
+Nature 2:
+   Max: 0
+   Requires:
+      - Nature 1
+   Invisible: True
+   Cost:
+      Fighter: 3
+      Rogue: 2
+      Scholar: 1
+      Templar: 1
+Nature 3:
+   Max: 0
+   Requires:
+      - Nature 2
+   Invisible: True
+   Cost:
+      Fighter: 6
+      Rogue: 4
+      Scholar: 2
+      Templar: 2
+Nature 4:
+   Max: 0
+   Requires:
+      - Nature 3
+   Invisible: True
+   Cost:
+      Fighter: 6
+      Rogue: 4
+      Scholar: 2
+      Templar: 3
+Nature 5:
+   Max: 0
+   Requires:
+      - Nature 4
+   Invisible: True
+   Cost:
+      Fighter: 9
+      Rogue: 6
+      Scholar: 3
+      Templar: 3
+Nature 6:
+   Max: 0
+   Requires:
+      - Nature 5
+   Invisible: True
+   Cost:
+      Fighter: 9
+      Rogue: 6
+      Scholar: 3
+      Templar: 4
+Nature 7:
+   Max: 0
+   Requires:
+      - Nature 6
+   Invisible: True
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 5
+Nature 8:
+   Max: 0
+   Requires:
+      - Nature 7
+   Invisible: True
+   Cost:
+      Fighter: 12
+      Rogue: 8
+      Scholar: 4
+      Templar: 5
+Nature 9:
+   Max: 0
+   Requires:
+      - Nature 8
+   Invisible: True
+   Cost:
+      Fighter: 15
+      Rogue: 10
+      Scholar: 5
+      Templar: 6
+Runes of Nature:
+   Requires:
+      - Commune with Nature
+   Cost:
+      Fighter: 8
+      Rogue: 6
+      Scholar: 4
+      Templar: 4

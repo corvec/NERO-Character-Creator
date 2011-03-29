@@ -263,8 +263,10 @@ class Character_Skill
 			return check_prereq_count(count)
 		end
 
-		# Check to see if it or any of the includes match it
-		@skill.includes.each do |inc|
+		# Check to see if its types, or any of its includes match it
+		include_list = @skill.types + (@skill.includes.is_a?(Hash) ? @skill.includes.keys : @skill.includes)
+
+		include_list.each do |inc|
 			if inc.to_s == prereq
 				temp = check_prereq_count(count)
 				return temp
@@ -317,19 +319,16 @@ class Character_Skill
 			return true
 		end
 		if @skill.prereqs.is_a? Hash
-			if @skill.to_s != "Critical Slay/Parry" and  @skill.to_s != "Master Critical Slay/Parry" and @skill.to_s != "Assassinate/Dodge"
+			if @skill.to_s != "Critical Slay/Parry" and  @skill.to_s != "Master Critical Slay/Parry" and @skill.to_s != "Assassinate/Dodge" and @skill.to_s != "Stop Thrust" and @skill.to_s != "Waylay"
 				return true
 			end
 			prof_count = build.count("Proficiency", @options )
 			slay_count = build.count("Critical Slay/Parry", @options )
 			mprof_count= build.count_mprofs( @options )
 			mslay_count= build.count_mslays( @options )
-			bstab_count= build.count("Backstab", @options )
-			dodge_count= build.count("Assassinate/Dodge", @options)
-			
-			count =  prof_count - slay_count * 2
+
+			count  = prof_count - slay_count * 2
 			mcount = mprof_count - mslay_count * 2
-			bcount = bstab_count - dodge_count * 2
 
 			if @skill.to_s == "Critical Slay/Parry"
 				return count + mcount >= my_count * 2
@@ -342,9 +341,68 @@ class Character_Skill
 				end
 			end
 			if @skill.to_s == "Assassinate/Dodge"
+				bstab_count= build.count("Backstab", @options )
+				dodge_count= build.count("Assassinate/Dodge", @options)
+				bcount = bstab_count - dodge_count * 2
 				return bcount >= my_count * 2
 			end
+
+			if @skill.to_s == "Stop Thrust"
+				pr2h_count = build.count_2hprofs(@options)
+				stop_count = build.count("Stop Thrust", @options)
+				scount = pr2h_count - (stop_count-1) * 2
+				return scount >= my_count * 2
+			end
+
+			if skill.to_s == "Waylay"
+				way_count = build.count('Waylay')
+				char_lvl  = @character.experience.level
+				return false unless self.meets_prereq?(build, "One Handed Weapon")
+				return false if way_count * 5 > char_lvl
+			end
+
+=begin
+			@skill.prereqs.each do |prereq, count|
+				skill_count = build.count(@skill.name, @options)
+				char_level = @character.experience.level
+
+				if count.is_a? Array
+					minimum = count[0]
+					count = count[1]
+				else
+					minimum = count
+				end
+				count = count.to_i
+
+				case prereq
+				when "Level"
+					if char_level < count * (skill_count + my_count - 1) + minimum
+						return false
+					end
+				when "Two Handed Proficiency"
+					if build.count_2hprofs < count * (skill_count + my_count - 1) + minimum
+						$log.debug "#{build.count_2hprofs} < #{count} * (#{skill_count} + #{my_count} - 1) + #{minimum}"
+						return false
+					end
+				else
+					pr_sk = NERO_Skill.lookup(prereq)
+					if pr_sk.is_a? NERO_Skill
+						if count == 0
+							if build.count(prereq, @options) == 0
+								return false
+							end
+						else
+							pr_count = build.count(prereq, @options)
+							if pr_count < count * (skill_count + my_count - 1) + minimum
+								return false
+							end
+						end
+					end
+				end
+			end
+=end
 		end
+		return true
 	end
 
 	def meets_prereq? build, prereq
