@@ -190,7 +190,6 @@ class Build
 				set_spells_at(school,i,spells_at(school,i-1)-1)
 			end
 		end
-
 	end
 
 	def spells_cost school, tree = nil
@@ -715,6 +714,8 @@ class Build
 		self.legalize
 	end
 
+	# While this build is not legal, delete any skill that is illegal
+	# If the character does not have spell prereqs, delete the spells
 	def legalize
 		$log.info "Build::legalize()"
 		domino = false
@@ -731,6 +732,7 @@ class Build
 		return domino
 	end
 
+	# Returns true if the character's build is legal
 	def legal?
 		@skills.each do |s|
 			if !s.meets_prerequisites?(self, 0) or s.cost == false

@@ -123,7 +123,7 @@ Classes:
         Base Body: 3
         Body Per Level: 1
     Scholar:
-        Base Body: 2.333333
+        Base Body:      2.666667
         Body Per Level: 0.666667
 Schools of Magic:
     Earth:

@@ -1,76 +1,37 @@
 --- 
 Backstory: ""
 Experience: 
-- Build: 213
+- Experience: 17403
   Type: Reset
-- Experience: 7049
-  Type: Reset
-- Number: 1.0
-  Times: 52
-  Type: Custom
 Info: 
-  Secondary School: Earth
-  Class: Templar
-  Character Name: Grom
-  Body Effects: 
-  - School: Earth
-    Restriction: ""
-    Expires: 2013-03-31
-    Effect: Glorn-Ridden (Base)
-  Race: Half Orc
+  Secondary School: Celestial
+  Class: Fighter
+  Character Name: ""
+  Body Effects: []
+
+  Race: Scavenger
   Death History: []
 
   Subrace: ""
-  Primary School: Celestial
-  Spirit Effects: 
-  - School: ""
-    Restriction: ""
-    Expires: 2013-03-31
-    Effect: Spirit Link to Hat
-  - School: ""
-    Restriction: ""
-    Expires: 2013-03-31
-    Effect: Spirit Link to Sword
-  - School: ""
-    Restriction: ""
-    Expires: 2013-03-31
-    Effect: Spirit Link to Shield
-  - School: Earth
-    Restriction: ""
-    Expires: 2013-03-31
-    Effect: Vengeance (250 Points, 7 Charges Left)
-  - School: Earth
-    Restriction: ""
-    Expires: 2013-03-31
-    Effect: Transform to Master Lich
-  Created: 2011-04-01
-  Player Name: Clinton Bernier
+  Primary School: Earth
+  Spirit Effects: []
+
+  Created: 2011-04-19
+  Player Name: ""
 Build: 
+- Resist Poison: 
+    Count: 4
 - Read and Write
-- Read Magic
+- Herbal Lore
+- Alchemy: 
+    Count: 6
 - One Handed Edged
 - Shield
-- Strong Arm
 - Proficiency: 
-    Count: 3
+    Count: 7
     Hand: Right
     Weapon: Long Sword
-- One Handed Block
-- Celestial 1: 
-    Count: 4
-- Celestial 2: 
-    Count: 4
-- Celestial 3: 
-    Count: 4
-- Celestial 4: 
-    Count: 4
-- Celestial 5: 
-    Count: 4
-- Celestial 6: 
-    Count: 4
-- Celestial 7: 
-    Count: 4
-- Celestial 8: 
-    Count: 4
-- Celestial 9: 
-    Count: 4
+- Critical Slay/Parry: 
+    Count: 2
+    Hand: Right
+    Weapon: Long Sword

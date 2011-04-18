@@ -280,7 +280,7 @@ class NERO_Character
 		<td align="right"><strong>Body Points: </strong></td>
 		<td><span id="body_p">'
 
-		s += self.calculate_body.to_s
+		s += self.calculate_body.to_i.to_s
 
 		s += '</span></td>
 		<td>&nbsp;</td>
