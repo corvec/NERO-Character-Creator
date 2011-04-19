@@ -172,7 +172,7 @@ class BaseWidget < Qt::Widget
 		}
 		action_html_help = Qt::Action.new('HT&ML Help',self)
 		action_html_help.connect(SIGNAL(:triggered)) {
-			Qt::DesktopServices.open_url(Qt::Url.new("file:///#{$config.setting('Working Directory')}/help/help.htm"))
+			Qt::DesktopServices.open_url(Qt::Url.new("file:///#{$config.setting('Working Directory').gsub(' ','%20')}/help/help.htm"))
 		}
 		action_about.connect(SIGNAL(:triggered)) {
 			dlg = Qt::Dialog.new(self)

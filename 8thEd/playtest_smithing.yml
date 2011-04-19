@@ -1,0 +1,16 @@
+Skills:
+    Smithing:
+       Max: 0
+       Includes:
+          - [Armorsmith]
+          - [Weaponsmith]
+       Cost:
+          Dwarf Fighter: 2
+          Dwarf Rogue: 3
+          Dwarf Scholar: 3
+          Dwarf Templar: 2
+          Fighter: 3
+          Rogue: 4
+          Scholar: 4
+          Templar: 3
+

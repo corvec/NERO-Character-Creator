@@ -1,7 +1,7 @@
 --- 
 Backstory: ""
 Experience: 
-- Experience: 17403
+- Build: 214
   Type: Reset
 Info: 
   Secondary School: Celestial
@@ -9,29 +9,33 @@ Info:
   Character Name: ""
   Body Effects: []
 
-  Race: Scavenger
+  Race: Human
   Death History: []
 
   Subrace: ""
   Primary School: Earth
   Spirit Effects: []
 
-  Created: 2011-04-19
+  Created: 2011-04-30
   Player Name: ""
 Build: 
-- Resist Poison: 
+- One Handed Edged
+- Waylay: 
     Count: 4
+- Disarm/Arm Trap
+- Proficiency: 
+    Count: 4
+    Weapon: Short Sword
+    Hand: Right
+- Backstab: 
+    Count: 2
+    Hand: Right
+- Assassinate/Dodge: 
+    Count: 1
+    Hand: Right
+- Florentine
+- Two Weapons
 - Read and Write
 - Herbal Lore
 - Alchemy: 
-    Count: 6
-- One Handed Edged
-- Shield
-- Proficiency: 
-    Count: 7
-    Hand: Right
-    Weapon: Long Sword
-- Critical Slay/Parry: 
-    Count: 2
-    Hand: Right
-    Weapon: Long Sword
+    Count: 1
