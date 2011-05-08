@@ -1,0 +1,581 @@
+Races:
+    Barbarian:
+        Starting Body: 2
+        Double Cost for Skills:
+            - Scholarly
+        Racial Skills:
+            Detect Celestial Magic: 2
+    Biata:
+        Prohibited Skills:
+            - Read Magic
+        Racial Skills:
+            Break Charm: 2
+            Resist Charm: 3
+            Resist Sleep: 2
+    Drae:
+        Abilities:
+            - "-2 Body between 6 AM and 6 PM"
+        Half Cost for Skills:
+            - Archery
+        Prohibited Skills:
+            - Two Handed Blunt
+            - Two Handed Sword
+        Racial Skills:
+            Resist Charm: 3
+            Resist Sleep: 2
+    Dwarf:
+        Starting Body: 1
+        Reduced Cost for Skills:
+            - Armorsmith
+            - Weaponsmith
+        Prohibited Skills:
+            - Staff
+            - Two Handed Blunt
+            - Two Handed Sword
+            - Polearm
+            - Two Handed Weapon Master
+            - Weapon Master
+        Double Cost for Skills:
+            - Read Magic
+        Racial Skills:
+            Resist Poison: 4
+    Elf:
+        Starting Body: -1
+        Half Cost for Skills:
+            - Archery
+        Racial Skills:
+            Resist Charm: 3
+            Resist Sleep: 2
+        Prohibited Skills:
+            - Two Handed Blunt
+            - Two Handed Sword
+    Gypsy:
+        Racial Skills:
+            "Gypsy Curse/Remove Gypsy Curse": 2
+    Half Ogre:
+        Starting Body: 2
+        Double Cost for Skills:
+            - Scholarly
+    Half Orc:
+        Starting Body: 2
+        Double Cost for Skills:
+            - Scholarly
+    Hobling:
+        Starting Body: -1
+        Racial Skills:
+            Resist Poison: 4
+        Prohibited Skills:
+            - Archery
+            - Staff
+            - Two Handed Blunt
+            - Two Handed Sword
+            - Polearm
+            - Two Handed Weapon Master
+            - Weapon Master
+        Prohibited Classes:
+            - Fighter
+        Default Class: Rogue
+        Half Cost for Skills:
+            - Pick Locks
+            - "Disarm/Arm Trap"
+    Human:
+        Default: true
+    Mystic Wood Elf:
+        Racial Skills:
+            Break Charm: 2
+            Resist Charm: 3
+        Reduced Cost for Skills:
+            - Craftsman Other
+        Level Requirements:
+            - Craftsman
+    Sarr:
+        Abilities:
+            - Scenting
+        Racial Skills:
+            Resist Poison: 4
+        Prohibited Skills:
+            - One Handed Blunt
+            - Two Handed Blunt
+            - Staff
+            - Archery
+            - Thrown Weapon
+            - One Handed Weapon Master
+            - Two Handed Weapon Master
+            - Weapon Master
+    Scavenger:
+        Abilities:
+            - Scenting
+        Racial Skills:
+            Resist Poison: 4
+        Double Cost for Skills:
+            - Scholarly
+Classes:
+    Fighter:
+        Base Body: 4
+        Body Per Level: 2
+    Rogue:
+        Base Body: 3
+        Body Per Level: 1
+    Templar:
+        Base Body: 3
+        Body Per Level: 1
+    Scholar:
+        Base Body: 2.333333
+        Body Per Level: 0.666667
+Schools of Magic:
+    Earth:
+        Requires: Healing Arts
+    Celestial:
+        Requires: Read Magic
+# This will be used to map to pseudo skills like Earth 1
+# Otherwise, skills with requirements like "Earth 4" would not function properly
+Spell Costs:
+    Fighter: [3, 3, 6, 6, 9, 9, 12, 12, 15]
+    Rogue:   [2, 2, 4, 4, 6, 6, 8, 8, 10]
+    Scholar: [1, 1, 2, 2, 3, 3, 4, 4, 5]
+    Templar: [1, 1, 2, 3, 3, 4, 5, 5, 6]
+Skills:
+    Alchemy:
+        Types:
+            - Craftsman
+        Requires:
+            - Herbal Lore
+        Max: 0
+        Cost:
+            Fighter: 6
+            Rogue: 3
+            Scholar: 4
+            Templar: 5
+    Armorsmith:
+        Types:
+            - Craftsman
+        Max: 0
+        Cost:
+            Fighter: 3
+            Rogue: 4
+            Scholar: 4
+            Templar: 3
+    Archery:
+        Cost:
+            Fighter: 6
+            Rogue: 10
+            Scholar: 15
+            Templar: 12
+        Types:
+            - Weapon
+    Assassinate/Dodge:
+        Max: 0
+        Requires:
+            Backstab: 2
+        Options:
+            - Hand
+        Cost:
+            Fighter: 20
+            Rogue: 10
+            Scholar: 20
+            Templar: 20
+    Back Attack:
+        Max: 4
+        Requires:
+            - Weapon
+        Options:
+            - Hand
+        Cost:
+            Fighter: 6
+            Rogue: 3
+            Scholar: 6
+            Templar: 6
+    Backstab:
+        Max: 0
+        Requires:
+            - Weapon
+        Options:
+            - Hand
+        Includes:
+            Back Attack: 4
+        Cost:
+            Fighter: 30
+            Rogue: 15
+            Scholar: 30
+            Templar: 30
+    Break Charm:
+        Max: 0
+    Craftsman Other:
+        Types:
+            - Craftsman
+        Max: 0
+        Options:
+            - Type
+        Cost:
+            Fighter: 3
+            Rogue: 3
+            Scholar: 3
+            Templar: 3
+    Create Potion:
+        Max: 0
+        Types:
+            - Craftsman
+        Requires:
+            - Earth 4
+        Cost:
+            Fighter: 6
+            Rogue: 5
+            Scholar: 3
+            Templar: 4
+    Create Scroll:
+        Max: 0
+        Types:
+            - Craftsman
+        Requires:
+            - Celestial 4
+        Cost:
+            Fighter: 6
+            Rogue: 5
+            Scholar: 3
+            Templar: 4
+    Create Trap:
+        Types:
+            - Craftsman
+        Max: 0
+        Requires:
+            - "Disarm/Arm Trap"
+        Cost:
+            Fighter: 6
+            Rogue: 3
+            Scholar: 4
+            Templar: 5
+    Critical Attack:
+        Max: 4
+        Requires:
+            - Weapon
+        Options:
+            - Hand
+            - Weapon
+        Cost:
+            Fighter: 3
+            Rogue: 4
+            Scholar: 8
+            Templar: [3, 4, 5]
+    Critical Slay/Parry:
+        Max: 0
+        Requires:
+            Proficiency: 2
+        Options:
+            - Hand
+            - Weapon
+        Cost:
+            Fighter: 10
+            Rogue: 15
+            Scholar: 20
+            Templar: 15
+    Detect Celestial Magic:
+        Max: 0
+        Cost:
+            Barbarian: 2
+    "Disarm/Arm Trap":
+        Types:
+            - Craftsman
+        Cost:
+            Fighter: 9
+            Rogue: 3
+            Scholar: 6
+            Templar: 9
+    Evaluate Item:
+        Types:
+            - Craftsman
+        Cost:
+            Fighter: 6
+            Rogue: 3
+            Scholar: 6
+            Templar: 6
+    First Aid:
+        Types:
+            - Craftsman
+        Cost:
+            Fighter: 4
+            Rogue: 3
+            Scholar: 2
+            Templar: 2
+    Florentine:
+        Requires:
+            - Weapon
+        Cost:
+            Fighter: 6
+            Rogue: 6
+            Scholar: 12
+            Templar: 8
+    "Formal Magic (Earth)":
+        Max: 0
+        Requires:
+            - Earth 9
+        Cost:
+            Fighter:
+              Primary: 12
+              Secondary: 24
+            Rogue:
+              Primary: 8
+              Secondary: 16
+            Scholar:
+              Primary: 4
+              Secondary: 8
+            Templar:
+              Primary: 4
+              Secondary: 8
+    "Formal Magic (Celestial)":
+        Max: 0
+        Requires:
+            - Celestial 9
+        Cost:
+            Fighter:
+              Primary: 12
+              Secondary: 24
+            Rogue:
+              Primary: 8
+              Secondary: 16
+            Scholar:
+              Primary: 4
+              Secondary: 8
+            Templar:
+              Primary: 4
+              Secondary: 8
+    "Gypsy Curse/Remove Gypsy Curse":
+        Max: 0
+        Cost:
+            Gypsy: 2
+    Healing Arts:
+        Types:
+            - Craftsman
+        Requires:
+            - First Aid
+            - Read and Write
+        Cost:
+            Fighter: 4
+            Rogue: 3
+            Scholar: 2
+            Templar: 2
+    Herbal Lore:
+        Types:
+            - Craftsman
+        Requires:
+            - Read and Write
+        Cost:
+            Fighter: 6
+            Rogue: 3
+            Scholar: 4
+            Templar: 5
+    Master Critical Attack:
+        Max: 4
+        Requires:
+            - Weapon
+        Options:
+            - Hand
+        Cost:
+            Fighter: 3
+            Rogue: [4, 4, 6]
+            Scholar: 8
+            Templar: [4, 4, 6]
+    Master Critical Slay/Parry:
+        Max: 0
+        Requires:
+            Master Proficiency: 2
+        Options:
+            - Hand
+        Cost:
+            Fighter: 13
+            Rogue: 18
+            Scholar: 25
+            Templar: 18
+    Master Proficiency:
+        Max: 0
+        Requires:
+            - Weapon
+        Options:
+            - Hand
+        Includes:
+            Master Critical Attack: 4
+            Proficiency: 1
+        Cost:
+            Fighter: 17
+            Rogue: [23, 24, 32]
+            Scholar: 44
+            Templar: [23, 24, 32]
+    One Handed Blunt:
+        Types:
+            - Weapon
+        Cost:
+            Fighter: 3
+            Rogue: 4
+            Scholar: 8
+            Templar: 5
+    One Handed Edged:
+        Types:
+            - Weapon
+        Cost:
+            Fighter: 5
+            Rogue: 5
+            Scholar: 10
+            Templar: 7
+    One Handed Weapon Master:
+        Includes:
+            - One Handed Edged
+            - One Handed Blunt
+            - Small Weapon
+        Cost:
+            Fighter: 8
+            Rogue: 10
+            Scholar: 14
+            Templar: 10
+    Pick Locks:
+        Types:
+            - Craftsman
+        Cost:
+            Fighter: 9
+            Rogue: 3
+            Scholar: 9
+            Templar: 9
+    Polearm:
+        Types:
+            - Weapon
+        Cost:
+            Fighter: 8
+            Rogue: 10
+            Scholar: 12
+            Templar: 10
+    Proficiency:
+        Includes:
+            Critical Attack: 4
+        Requires:
+            - Weapon
+        Max: 0
+        Options:
+            - Hand
+            - Weapon
+        Cost:
+            Fighter: 15
+            Rogue: 20
+            Scholar: 40
+            Templar: [15, 20, 25]
+    Read and Write:
+        Types:
+            - Craftsman
+            - Scholarly
+        Cost:
+            Fighter: 6
+            Rogue: 6
+            Scholar: 3
+            Templar: 3
+    Read Magic:
+        Types:
+            - Craftsman
+            - Scholarly
+        Requires:
+            - Read and Write
+        Cost:
+            Fighter: 8
+            Rogue: 6
+            Scholar: 4
+            Templar: 4
+    Resist Charm:
+        Max: 0
+    Resist Poison:
+        Max: 0
+    Resist Sleep:
+        Max: 0
+    Shield:
+        Cost:
+            Fighter: 5
+            Rogue: 10
+            Scholar: 15
+            Templar: 7
+    Small Weapon:
+        Types:
+            - Weapon
+        Cost: 2
+    Staff:
+        Types:
+            - Weapon
+        Cost: 4
+    Style Master:
+        Includes:
+            - Florentine
+            - Two Weapons
+            - Shield
+        Cost:
+            Fighter: 10
+            Rogue: 15
+            Scholar: 20
+            Templar: 15
+    Thrown Weapon:
+        Types:
+            - Weapon
+        Cost: 4
+    Two Handed Blunt:
+        Types:
+            - Weapon
+        Cost:
+            Fighter: 6
+            Rogue: 8
+            Scholar: 12
+            Templar: 8
+    Two Handed Sword:
+        Types:
+            - Weapon
+        Cost:
+            Fighter: 8
+            Rogue: 12
+            Scholar: 16
+            Templar: 12
+    Two Handed Weapon Master:
+        Includes:
+            - Polearm
+            - Two Handed Blunt
+            - Two Handed Sword
+            - Staff
+        Cost:
+            Fighter: 12
+            Rogue: 14
+            Scholar: 18
+            Templar: 14
+    Two Weapons:
+        Requires:
+            - Florentine
+        Cost:
+            Fighter: 2
+            Rogue: 4
+            Scholar: 4
+            Templar: 4
+    Waylay:
+        Cost:
+            Fighter: 12
+            Rogue: 6
+            Scholar: 12
+            Templar: 12
+    Weapon Master:
+        Includes:
+            - One Handed Weapon Master
+            - Two Handed Weapon Master
+        Cost:
+            Fighter: 15
+            Rogue: 18
+            Scholar: 20
+            Templar: 18
+    Weaponsmith:
+        Types:
+            - Craftsman
+        Max: 0
+        Cost:
+            Fighter: 3
+            Rogue: 4
+            Scholar: 4
+            Templar: 3
+    Wear Extra Armor:
+        Max:
+            Fighter: 1
+            Rogue: 5
+            Scholar: 6
+            Templar: 4
+        Cost:
+            Fighter: 2
+            Rogue: 2
+            Scholar: 4
+            Templar: 2

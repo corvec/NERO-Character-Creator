@@ -93,6 +93,15 @@ class BaseWidget < Qt::Widget
 					  #self, SLOT('export()'))
 		end
 
+		unless $config.setting('One Line Export').nil?
+			action_one_line_export = Qt::Action.new("Generate One Line Export", self)
+			@file_menu.addAction(action_one_line_export)
+			action_one_line_export.connect(SIGNAL(:triggered)) {
+				self.one_line_export()
+			}
+			action_one_line_export.shortcut = Qt::KeySequence.new("Ctrl+T")
+		end
+
 
 		action_exit = Qt::Action.new('E&xit',self)
 		@file_menu.addAction(action_exit)
@@ -245,6 +254,37 @@ class BaseWidget < Qt::Widget
 	def save()
 		$log.debug "Saving"
 		return self.save_as(@file)
+	end
+
+	def one_line_export()
+		$log.debug "Generating One Line Export..."
+		export = "#{$character.name},#{$character.race},#{$character.character_class},#{$character.experience.build},#{$character.calculate_body.to_i},#{$character.primary}"
+
+		export = ''
+		$character.build.skills.each do |skill|
+			if skill.skill.limit != 1 or skill.skill.options.length > 0
+				export += ","
+				if skill.skill.limit != 1
+					export += "#{skill.count.to_s}x "
+				end
+				export += "#{skill.to_s} "
+				unless skill.options.empty?
+					export += skill.options.inspect.gsub('"','')
+				end
+			else
+				export += ",#{skill.to_s}"
+			end
+		end
+		['Earth','Celestial'].each do |school|
+			1.upto(9) do |level|
+				num = $character.build.spell_at(school,level)
+				break if num = 0
+				export += ",#{num}x #{school} #{level}"
+			end
+		end
+		export.sub!(',','')
+		$log.info export
+		Qt::Application.clipboard.text= export
 	end
 
 	def export(file = nil)
