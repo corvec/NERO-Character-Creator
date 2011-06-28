@@ -263,26 +263,34 @@ class BaseWidget < Qt::Widget
 		export = ''
 		$character.build.skills.each do |skill|
 			if skill.skill.limit != 1 or skill.skill.options.length > 0
-				export += ","
+				export += "@"
 				if skill.skill.limit != 1
 					export += "#{skill.count.to_s}x "
 				end
-				export += "#{skill.to_s} "
-				unless skill.options.empty?
-					export += skill.options.inspect.gsub('"','')
-				end
+				export += "#{skill.to_s}"
+				#unless skill.options.empty?
+				#	export += skill.options.inspect.gsub('"','')
+				#end
 			else
-				export += ",#{skill.to_s}"
+				export += "@#{skill.to_s}"
 			end
 		end
 		['Earth','Celestial'].each do |school|
-			1.upto(9) do |level|
-				num = $character.build.spell_at(school,level)
-				break if num = 0
-				export += ",#{num}x #{school} #{level}"
+			if $character.build.spell_at(school,1) > 0 then
+				export += "@"
+				1.upto(9) do |level|
+					num = $character.build.spell_at(school,level)
+					export += "#{$character.build.spell_at(school,level)} "
+					if level == 3 or level == 6 then
+						export += "/ "
+					end
+				end
+				export += "#{($character.primary == school) ? 'Primary' : 'Secondary'} school"
 			end
 		end
-		export.sub!(',','')
+		export.sub!('@','')
+		export.sub!($character.primary,"Primary") # Formal Magic (Earth) -> Formal Magic (Primary)
+		export.sub!($character.secondary,"Secondary")
 		$log.info export
 		Qt::Application.clipboard.text= export
 	end
@@ -400,3 +408,4 @@ class BaseWidget < Qt::Widget
 		end
 	end
 end
+
