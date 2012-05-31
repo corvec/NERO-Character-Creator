@@ -4,7 +4,7 @@ NERO Character Creator
 This is a desktop NERO character creator and tracker for Windows (or Linux).
 It's designed to make it easy to figure out what you want to do with your character (build-wise, at least).
 
-It is written in Ruby. It uses Qt 4.6 for the GUI and YAML files for all data.
+It is written in Ruby. It uses Qt 4.7 for the GUI and YAML files for all data.
 
 It has the following features:
  * Tracks basic information, such as player name, character name, race, class, and primary school of magic
@@ -15,3 +15,11 @@ It has the following features:
  * Saves your character's back story
  * Makes it especially easy to determine your spell tree
  * Tracks deaths and spirit forges
+
+If you are interested in developing this application on Windows (on Linux you shouldn't need as much help), you can follow the following steps:
+1. Install Ruby 1.8.7 from http://www.rubyinstaller.org
+2. Install the Development Kit from http://www.rubyinstaller.org
+3. Copy the latest copies of the Qt library DLLs into a directory listed in your path, such as C:\Windows\System32
+4. In the ruby command prompt, run 'gem install rake'
+5. In the ruby command prompt, run 'gem install --platform=mswin32 qtruby4'
+6. In the ruby command prompt, run 'gem install win32-dir'

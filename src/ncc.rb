@@ -19,7 +19,7 @@
 =end
 
 require 'rubygems'
-require 'Qt4'
+require 'Qt'
 require 'date'
 require 'optparse'
 require 'win32/dir' if RUBY_PLATFORM.include?('win32') or RUBY_PLATFORM.include?('i386-mingw32')

@@ -4,6 +4,7 @@ require 'gui_tab_info.rb'
 require 'gui_tab_build.rb'
 require 'gui_tab_experience.rb'
 require 'gui_tab_backstory.rb'
+# require 'gui_tab_abilities.rb'
 require 'gui_config.rb'
 
 
@@ -82,16 +83,12 @@ class BaseWidget < Qt::Widget
 		#connect(action_save_as, SIGNAL('triggered()'),
 				  #self, SLOT('save_as()'))
 
-		unless $config.setting('Chapter').nil?
-			action_export = Qt::Action.new('&Export as HTML to Desktop',self)
-			@file_menu.addAction(action_export)
-			action_export.connect(SIGNAL(:triggered)) {
-				self.export()
-			}
-			action_export.shortcut = Qt::KeySequence.new("Ctrl+E")
-			#connect(action_export, SIGNAL('triggered()'),
-					  #self, SLOT('export()'))
-		end
+		action_export = Qt::Action.new('&Export as HTML to Desktop',self)
+		@file_menu.addAction(action_export)
+		action_export.connect(SIGNAL(:triggered)) {
+			self.export()
+		}
+		action_export.shortcut = Qt::KeySequence.new("Ctrl+E")
 
 		unless $config.setting('One Line Export').nil?
 			action_one_line_export = Qt::Action.new("Generate One Line Export", self)
@@ -112,7 +109,9 @@ class BaseWidget < Qt::Widget
 		#Experience Menu
 		@exp_menu = Qt::Menu.new('&Experience')
 		action_set_exp = Qt::Action.new('Set E&xperience',self)
+		action_set_exp.shortcut = Qt::KeySequence.new("Ctrl+T")
 		action_set_build = Qt::Action.new('Set &Build',self)
+		action_set_build.shortcut = Qt::KeySequence.new("Ctrl+B")
 		action_set_loose = Qt::Action.new('Set Loose Experience',self)
 		action_set_level = Qt::Action.new('Set &Level',self)
 		action_exp_undo = Qt::Action.new('&Delete Last Entry',self)
@@ -191,7 +190,7 @@ class BaseWidget < Qt::Widget
 			widgets << Qt::Label.new('<b><font size="14">NERO Character Creator</font></b>',nil)
 			widgets.last.alignment = Qt::AlignCenter
 			#widgets.last.textFormat = Qt::RichText
-			widgets << Qt::Label.new('Version 0.9.7 (Released 2011 March 29)',nil)
+			widgets << Qt::Label.new('Version 0.10.0a (Released 2011 July 20)',nil)
 			widgets.last.alignment = Qt::AlignCenter
 			widgets << Qt::Label.new('by Corey T Kump',nil)
 			widgets.last.alignment = Qt::AlignCenter
@@ -222,14 +221,17 @@ class BaseWidget < Qt::Widget
 		@layout.addWidget(@menubar)
 
 		$tabs = [InfoWidget.new(self),
-		         BuildWidget.new(self),
-		         ExperienceWidget.new(self),
-		         BackstoryWidget.new(self)]
+		        BuildWidget.new(self),
+		        ExperienceWidget.new(self),
+		        BackstoryWidget.new(self)
+		#       ,AbilitiesWidget.new(self),
+		]
 		@tabbar = Qt::TabWidget.new(self)
 		@tabbar.addTab($tabs[0],'Info')
 		@tabbar.addTab($tabs[1],'Build')
 		@tabbar.addTab($tabs[2],'Experience')
 		@tabbar.addTab($tabs[3],'Backstory')
+		#@tabbar.addTab($tabs[4],'Abilities')
 
 		@layout.addWidget(@tabbar)
 

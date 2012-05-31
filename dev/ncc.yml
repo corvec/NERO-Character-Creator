@@ -1,32 +1,55 @@
---- 
-Backstory: ""
-Experience: []
-
-Info: 
-  Secondary School: Earth
-  Primary School: Celestial
-  Spirit Effects: []
-
-  Created: 2011-05-02
-  Body Effects: []
-
-  Class: Scholar
-  Subrace: ""
-  Race: Human
-  Character Name: Example Bandit
+---
+Info:
+  Player Name: ''
+  Character Name: ''
+  Created: 2012-05-24
+  Race: Elf
+  Subrace: ''
+  Class: Templar
+  Primary School: Earth
+  Secondary School: Celestial
   Death History: []
-
-  Player Name: ""
-Build: 
+  Spirit Effects: []
+  Body Effects: []
+Build:
+- One Handed Edged
+- Shield
+- First Aid
 - Read and Write
-- Read Magic
-- Celestial 1: 
-    Count: 4
-- Celestial 2: 
-    Count: 4
-- Celestial 3: 
-    Count: 4
-- Celestial 4: 
+- Healing Arts
+- Proficiency:
+    Count: 6
+    Hand: Right
+    Weapon: Long Sword
+- Critical Slay/Parry:
     Count: 2
-- Celestial 5: 
+    Hand: Right
+    Weapon: Long Sword
+- Formal Magic (Earth):
+    Count: 5
+- Resist Charm:
+    Count: 2
+- Resist Sleep:
     Count: 1
+- Earth 1:
+    Count: 6
+- Earth 2:
+    Count: 6
+- Earth 3:
+    Count: 6
+- Earth 4:
+    Count: 6
+- Earth 5:
+    Count: 6
+- Earth 6:
+    Count: 6
+- Earth 7:
+    Count: 6
+- Earth 8:
+    Count: 6
+- Earth 9:
+    Count: 6
+Experience:
+- Type: Reset
+  Build: 380
+Backstory: ''

@@ -284,7 +284,10 @@ class SkillsWidget < Qt::ScrollArea
 		slider_position = self.verticalScrollBar.sliderPosition
 		old_frame = self.takeWidget()
 		old_frame.deleteLater if old_frame != nil
-		@grid = Qt::GridLayout.new(nil) #the old grid should automatically be destroyed
+
+
+		@frame = Qt::Frame.new()
+		@grid = Qt::GridLayout.new(@frame) #the old grid should automatically be destroyed
 
 		@abilities = $character.race.abilities
 		ability_count = @abilities.size
@@ -379,11 +382,11 @@ class SkillsWidget < Qt::ScrollArea
 				@grid.addWidget(options_frame,vert_pos,2)
 			end
 		end
-		@frame = Qt::Frame.new()
-		@frame.setLayout(@grid)
-		self.setWidget(@frame)
+		self.set_widget(@frame)
 
 		self.verticalScrollBar.sliderPosition = slider_position
+
+		@frame.show
 	end
 	def commit
 		$tabs.each do |tab|
