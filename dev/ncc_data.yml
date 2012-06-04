@@ -129,9 +129,11 @@ Classes:
         Body Per Level: 0.666667
 Schools of Magic:
     Earth:
-        Requires: Healing Arts
+        Requires:
+            - Healing Arts
     Celestial:
-        Requires: Read Magic
+        Requires:
+            - Read Magic
 # This will be used to map to pseudo skills like Earth 1
 # Otherwise, skills with requirements like "Earth 4" would not function properly
 Spell Costs:
